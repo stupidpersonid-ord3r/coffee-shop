@@ -11,17 +11,61 @@ export default function FindOrder() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // =========================
+  // NORMALIZE ORDER NUMBER
+  // =========================
+  const normalizeOrderNumber = (value) => {
+    return value
+      .trim()
+      .replace(/^#/, "")
+      .replace(/\s+/g, "")
+      .toUpperCase();
+  };
+
+  // =========================
+  // NORMALIZE PHONE
+  // =========================
+  const normalizePhone = (value) => {
+    let cleaned = value
+      .trim()
+      .replace(/\s+/g, "")
+      .replace(/-/g, "");
+
+    // +62xxxxxxxx
+    if (cleaned.startsWith("+62")) {
+      cleaned = "0" + cleaned.slice(3);
+    }
+
+    // 62xxxxxxxx
+    if (cleaned.startsWith("62")) {
+      cleaned = "0" + cleaned.slice(2);
+    }
+
+    return cleaned;
+  };
+
+  // =========================
+  // HANDLE SEARCH
+  // =========================
   const handleSearch = async (e) => {
     e.preventDefault();
 
     setError("");
 
-    if (!orderNumber.trim()) {
+    const normalizedOrderNumber =
+      normalizeOrderNumber(orderNumber);
+
+    const normalizedPhone = normalizePhone(phone);
+
+    // =========================
+    // VALIDATION
+    // =========================
+    if (!normalizedOrderNumber) {
       setError("Nomor pesanan wajib diisi.");
       return;
     }
 
-    if (!phone.trim()) {
+    if (!normalizedPhone) {
       setError("Nomor WhatsApp wajib diisi.");
       return;
     }
@@ -29,33 +73,53 @@ export default function FindOrder() {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
+      // =========================
+      // CARI PESANAN
+      // =========================
+      const { data, error: searchError } = await supabase
         .from("orders")
-        .select("id, order_number")
-        .eq(
-          "order_number",
-          orderNumber.trim().toUpperCase()
-        )
-        .eq(
-          "phone",
-          phone.trim()
-        )
-        .single();
+        .select("id, order_number, phone")
+        .eq("order_number", normalizedOrderNumber)
+        .eq("phone", normalizedPhone)
+        .maybeSingle();
 
-      if (error || !data) {
-        console.error("Find order error:", error);
-        setError("Pesanan tidak ditemukan.");
+      // =========================
+      // ERROR SUPABASE
+      // =========================
+      if (searchError) {
+        console.error(
+          "Find order Supabase error:",
+          searchError
+        );
+
+        setError(
+          "Terjadi kesalahan saat mencari pesanan. Silakan coba lagi."
+        );
+
         return;
       }
 
       // =========================
-      // ORDER DITEMUKAN
+      // PESANAN TIDAK DITEMUKAN
+      // =========================
+      if (!data) {
+        setError(
+          "Pesanan tidak ditemukan. Pastikan nomor pesanan dan nomor WhatsApp sudah benar."
+        );
+
+        return;
+      }
+
+      // =========================
+      // PESANAN DITEMUKAN
       // =========================
       navigate(`/order-tracking/${data.id}`);
-
     } catch (err) {
       console.error("Search order error:", err);
-      setError("Terjadi kesalahan saat mencari pesanan.");
+
+      setError(
+        "Terjadi kesalahan saat mencari pesanan."
+      );
     } finally {
       setLoading(false);
     }
@@ -66,8 +130,11 @@ export default function FindOrder() {
       <section className="min-h-[80vh] flex items-center justify-center px-5 py-20">
         <div className="w-full max-w-lg bg-white rounded-3xl shadow-lg border border-gray-200 p-8">
 
-          {/* HEADER */}
+          {/* =========================
+              HEADER
+          ========================= */}
           <div className="text-center mb-8">
+
             <div className="text-5xl mb-3">
               🔍
             </div>
@@ -80,117 +147,196 @@ export default function FindOrder() {
               Masukkan nomor pesanan dan nomor WhatsApp
               untuk melihat status pesanan.
             </p>
+
           </div>
 
-          {/* FORM */}
+          {/* =========================
+              FORM
+          ========================= */}
           <form
             onSubmit={handleSearch}
             className="space-y-5"
           >
 
-            {/* ORDER NUMBER */}
+            {/* =========================
+                ORDER NUMBER
+            ========================= */}
             <div>
-              <label className="block mb-2 font-medium">
+
+              <label className="block mb-2 font-medium text-gray-700">
                 Nomor Pesanan
               </label>
 
               <input
                 type="text"
                 value={orderNumber}
-                onChange={(e) =>
-                  setOrderNumber(e.target.value)
-                }
+                onChange={(e) => {
+                  setOrderNumber(e.target.value);
+                  setError("");
+                }}
                 placeholder="ORD-20260814-0001"
-                className="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-amber-600 outline-none"
+                autoComplete="off"
+                className="
+                  w-full
+                  border
+                  border-gray-300
+                  rounded-xl
+                  px-4
+                  py-3
+                  outline-none
+                  transition
+                  focus:ring-2
+                  focus:ring-amber-600
+                  focus:border-transparent
+                "
               />
+
+              <p className="text-xs text-gray-400 mt-2">
+                Contoh: ORD-20260814-0001
+              </p>
+
             </div>
 
-            {/* PHONE */}
+            {/* =========================
+                PHONE
+            ========================= */}
             <div>
-              <label className="block mb-2 font-medium">
+
+              <label className="block mb-2 font-medium text-gray-700">
                 Nomor WhatsApp
               </label>
 
               <input
-                type="text"
+                type="tel"
                 value={phone}
-                onChange={(e) =>
-                  setPhone(e.target.value)
-                }
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  setError("");
+                }}
                 placeholder="08123456789"
-                className="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-amber-600 outline-none"
+                autoComplete="tel"
+                className="
+                  w-full
+                  border
+                  border-gray-300
+                  rounded-xl
+                  px-4
+                  py-3
+                  outline-none
+                  transition
+                  focus:ring-2
+                  focus:ring-amber-600
+                  focus:border-transparent
+                "
               />
+
+              <p className="text-xs text-gray-400 mt-2">
+                Bisa menggunakan 08..., 62..., atau +62...
+              </p>
+
             </div>
 
-            {/* ERROR */}
+            {/* =========================
+                ERROR
+            ========================= */}
             {error && (
-              <div className="rounded-xl bg-red-50 border border-red-200 text-red-600 p-3">
-                {error}
+              <div className="
+                flex
+                items-start
+                gap-3
+                rounded-xl
+                bg-red-50
+                border
+                border-red-200
+                text-red-600
+                p-4
+                text-sm
+              ">
+                <span className="text-base">
+                  ⚠️
+                </span>
+
+                <p>
+                  {error}
+                </p>
               </div>
             )}
 
-            {/* BUTTON */}
+            {/* =========================
+                BUTTON
+            ========================= */}
             <button
-  type="submit"
-  disabled={loading}
-  className="
-    group
-    w-full
-    flex
-    items-center
-    justify-center
-    gap-3
-    bg-gray-900
-    hover:bg-amber-700
-    text-white
-    py-4
-    px-6
-    rounded-2xl
-    font-semibold
-    shadow-lg
-    hover:shadow-xl
-    transition-all
-    duration-300
-    disabled:opacity-60
-    disabled:cursor-not-allowed
-  "
->
-  {loading ? (
-    <>
-      <span
-        className="
-          w-5
-          h-5
-          border-2
-          border-white/30
-          border-t-white
-          rounded-full
-          animate-spin
-        "
-      />
+              type="submit"
+              disabled={loading}
+              className="
+                group
+                w-full
+                flex
+                items-center
+                justify-center
+                gap-3
+                bg-gray-900
+                hover:bg-amber-700
+                text-white
+                py-4
+                px-6
+                rounded-2xl
+                font-semibold
+                shadow-lg
+                hover:shadow-xl
+                transition-all
+                duration-300
+                disabled:opacity-60
+                disabled:cursor-not-allowed
+              "
+            >
+              {loading ? (
+                <>
+                  <span
+                    className="
+                      w-5
+                      h-5
+                      border-2
+                      border-white/30
+                      border-t-white
+                      rounded-full
+                      animate-spin
+                    "
+                  />
 
-      <span>
-        Mencari Pesanan...
-      </span>
-    </>
-  ) : (
-    <>
-      <span className="text-xl transition-transform duration-300 group-hover:scale-110">
-        🔍
-      </span>
+                  <span>
+                    Mencari Pesanan...
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="
+                    text-xl
+                    transition-transform
+                    duration-300
+                    group-hover:scale-110
+                  ">
+                    🔍
+                  </span>
 
-      <span>
-        Lacak Pesanan
-      </span>
+                  <span>
+                    Lacak Pesanan
+                  </span>
 
-      <span className="text-lg transition-transform duration-300 group-hover:translate-x-1">
-        →
-      </span>
-    </>
-  )}
-</button>
+                  <span className="
+                    text-lg
+                    transition-transform
+                    duration-300
+                    group-hover:translate-x-1
+                  ">
+                    →
+                  </span>
+                </>
+              )}
+            </button>
 
           </form>
+
         </div>
       </section>
     </MainLayout>

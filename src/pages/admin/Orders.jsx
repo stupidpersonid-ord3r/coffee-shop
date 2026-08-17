@@ -113,6 +113,74 @@ export default function Orders() {
   };
 
   // =========================
+// VERIFY PAYMENT
+// =========================
+  // =========================
+// VERIFY PAYMENT
+// =========================
+const verifyPayment = async (orderId) => {
+  try {
+    setUpdatingId(orderId);
+
+    const paidAt = new Date().toISOString();
+
+    // =========================
+    // 1. UPDATE PAYMENT
+    // =========================
+    const { error: paymentError } = await supabase
+      .from("payments")
+      .update({
+        payment_status: "paid",
+        paid_at: paidAt,
+      })
+      .eq("order_id", orderId);
+
+    if (paymentError) {
+      throw paymentError;
+    }
+
+    // =========================
+    // 2. UPDATE ORDER → PROCESSING
+    // =========================
+    const { error: orderError } = await supabase
+      .from("orders")
+      .update({
+        status: "Processing",
+      })
+      .eq("id", orderId);
+
+    if (orderError) {
+      throw orderError;
+    }
+
+    // =========================
+    // 3. UPDATE UI
+    // =========================
+    setOrders((prevOrders) =>
+      prevOrders.map((order) =>
+        order.id === orderId
+          ? {
+              ...order,
+              status: "Processing",
+              payment: {
+                ...order.payment,
+                payment_status: "paid",
+                paid_at: paidAt,
+              },
+            }
+          : order
+      )
+    );
+
+  } catch (error) {
+    console.error("Error verifikasi pembayaran:", error);
+    alert("Gagal memverifikasi pembayaran.");
+  } finally {
+    setUpdatingId(null);
+  }
+};
+
+  // =========================
   // ORDER STATUS CLASS
   // =========================
   const getStatusClass = (status) => {
@@ -500,83 +568,119 @@ export default function Orders() {
                 </div>
 
                 {/* =========================
-                    ORDER ITEMS
-                ========================= */}
-                <div className="py-5">
+    ORDER ITEMS
+========================= */}
+<div className="py-5">
 
-                  <h2 className="font-bold text-lg text-gray-900 mb-4">
-                    Pesanan
-                  </h2>
+  <h2 className="font-bold text-lg text-gray-900 mb-4">
+    Pesanan
+  </h2>
 
-                  <div className="space-y-4">
+  <div className="space-y-4">
 
-                    {order.order_items?.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between gap-4"
-                      >
+    {order.order_items?.map((item) => (
+      <div
+        key={item.id}
+        className="flex items-center justify-between gap-4"
+      >
 
-                        {/* PRODUCT */}
-                        <div className="flex items-center gap-3">
+        {/* PRODUCT */}
+        <div className="flex items-center gap-3">
 
-                          {item.products?.image && (
-                            <img
-                              src={item.products.image}
-                              alt={item.products.name}
-                              className="w-14 h-14 rounded-xl object-cover"
-                            />
-                          )}
+          {item.products?.image && (
+            <img
+              src={item.products.image}
+              alt={item.products.name}
+              className="w-14 h-14 rounded-xl object-cover"
+            />
+          )}
 
-                          <div>
+          <div>
+            <p className="font-medium text-gray-900">
+              {item.products?.name || "Produk"}
+            </p>
 
-                            <p className="font-medium text-gray-900">
-                              {item.products?.name || "Produk"}
-                            </p>
+            <p className="text-sm text-gray-500">
+              {item.quantity} × Rp{" "}
+              {Number(item.price).toLocaleString("id-ID")}
+            </p>
+          </div>
 
-                            <p className="text-sm text-gray-500">
-                              {item.quantity} × Rp{" "}
-                              {Number(
-                                item.price
-                              ).toLocaleString("id-ID")}
-                            </p>
+        </div>
 
-                          </div>
+        {/* SUBTOTAL */}
+        <p className="font-semibold text-gray-900 whitespace-nowrap">
+          Rp{" "}
+          {(
+            Number(item.price) *
+            Number(item.quantity)
+          ).toLocaleString("id-ID")}
+        </p>
 
-                        </div>
+      </div>
+    ))}
 
-                        {/* SUBTOTAL */}
-                        <p className="font-semibold text-gray-900 whitespace-nowrap">
-                          Rp{" "}
-                          {(
-                            Number(item.price) *
-                            Number(item.quantity)
-                          ).toLocaleString("id-ID")}
-                        </p>
+  </div>
 
-                      </div>
-                    ))}
+</div>
 
-                  </div>
+{/* =========================
+    TOTAL & PAYMENT STATUS
+========================= */}
+<div className="border-t border-gray-200 pt-5">
 
-                </div>
+  {/* TOTAL */}
+  <div className="flex justify-between items-center">
 
-                {/* =========================
-                    TOTAL
-                ========================= */}
-                <div className="border-t border-gray-200 pt-5 flex justify-between items-center">
+    <span className="text-gray-500">
+      Total Pesanan
+    </span>
 
-                  <span className="text-gray-500">
-                    Total Pesanan
-                  </span>
+    <span className="text-2xl font-bold text-gray-900">
+      Rp{" "}
+      {Number(order.total).toLocaleString("id-ID")}
+    </span>
 
-                  <span className="text-2xl font-bold text-gray-900">
-                    Rp{" "}
-                    {Number(order.total).toLocaleString(
-                      "id-ID"
-                    )}
-                  </span>
+  </div>
 
-                </div>
+  {/* PAYMENT STATUS */}
+  <div className="mt-5 pt-5 border-t border-gray-100">
+
+    <p className="text-sm text-gray-500 mb-2">
+      Status Pembayaran
+    </p>
+
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+
+      <span
+        className={`inline-flex w-fit px-3 py-1 rounded-full text-sm font-semibold ${getPaymentStatusClass(
+          order.payment?.payment_status
+        )}`}
+      >
+        {getPaymentStatusLabel(
+          order.payment?.payment_status
+        )}
+      </span>
+
+      {/* VERIFY PAYMENT */}
+      {order.payment?.payment_status ===
+        "waiting_verification" && (
+        <button
+          onClick={() => verifyPayment(order.id)}
+          disabled={updatingId === order.id}
+          className="px-4 py-2 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {updatingId === order.id
+            ? "Memverifikasi..."
+            : "✓ Verifikasi Pembayaran"}
+        </button>
+      )}
+
+    </div>
+
+  </div>
+
+</div>
 
               </div>
             ))}
