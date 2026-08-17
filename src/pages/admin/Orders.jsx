@@ -7,37 +7,78 @@ export default function Orders() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
 
+  // =========================
+  // FETCH ORDERS
+  // =========================
   const fetchOrders = async () => {
-    const { data, error } = await supabase
-      .from("orders")
-      .select(`
-        *,
-        order_items (
-          id,
-          quantity,
-          price,
-          products (
-            name,
-            image
+    try {
+      setLoading(true);
+
+      // =========================
+      // AMBIL ORDERS
+      // =========================
+      const { data: ordersData, error: ordersError } = await supabase
+        .from("orders")
+        .select(`
+          *,
+          order_items (
+            id,
+            quantity,
+            price,
+            products (
+              name,
+              image
+            )
           )
-        )
-      `)
-      .order("created_at", { ascending: false });
+        `)
+        .order("created_at", { ascending: false });
 
-    if (error) {
+      if (ordersError) {
+        throw ordersError;
+      }
+
+      // =========================
+      // AMBIL PAYMENTS
+      // =========================
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from("payments")
+        .select("*");
+
+      if (paymentsError) {
+        throw paymentsError;
+      }
+
+      // =========================
+      // GABUNGKAN PAYMENT
+      // KE MASING-MASING ORDER
+      // =========================
+      const ordersWithPayment = (ordersData || []).map((order) => ({
+        ...order,
+        payment:
+          paymentsData?.find(
+            (payment) => payment.order_id === order.id
+          ) || null,
+      }));
+
+      setOrders(ordersWithPayment);
+    } catch (error) {
       console.error("Error mengambil orders:", error);
+      setOrders([]);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setOrders(data || []);
-    setLoading(false);
   };
 
+  // =========================
+  // INITIAL FETCH
+  // =========================
   useEffect(() => {
     fetchOrders();
   }, []);
 
+  // =========================
+  // UPDATE ORDER STATUS
+  // =========================
   const updateStatus = async (orderId, newStatus) => {
     try {
       setUpdatingId(orderId);
@@ -71,9 +112,9 @@ export default function Orders() {
     }
   };
 
-  // Status dibuat fleksibel agar:
-  // Pending, PENDING, pending, atau " Pending "
-  // tetap mendapatkan warna yang sama.
+  // =========================
+  // ORDER STATUS CLASS
+  // =========================
   const getStatusClass = (status) => {
     const normalizedStatus = status?.trim().toLowerCase();
 
@@ -95,13 +136,89 @@ export default function Orders() {
     }
   };
 
+  // =========================
+  // PAYMENT STATUS CLASS
+  // =========================
+  const getPaymentStatusClass = (status) => {
+    const normalizedStatus = status?.trim().toLowerCase();
+
+    switch (normalizedStatus) {
+      case "paid":
+        return "bg-green-100 text-green-700";
+
+      case "waiting_verification":
+        return "bg-yellow-100 text-yellow-700";
+
+      case "pending":
+        return "bg-gray-100 text-gray-700";
+
+      case "failed":
+        return "bg-red-100 text-red-700";
+
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
+  };
+
+  // =========================
+  // PAYMENT STATUS LABEL
+  // =========================
+  const getPaymentStatusLabel = (status) => {
+    const normalizedStatus = status?.trim().toLowerCase();
+
+    switch (normalizedStatus) {
+      case "paid":
+        return "Pembayaran Berhasil";
+
+      case "waiting_verification":
+        return "Menunggu Verifikasi";
+
+      case "pending":
+        return "Menunggu Pembayaran";
+
+      case "failed":
+        return "Pembayaran Gagal";
+
+      default:
+        return status || "-";
+    }
+  };
+
+  // =========================
+  // PAYMENT METHOD LABEL
+  // =========================
+  const getPaymentMethodLabel = (method) => {
+    const normalizedMethod = method?.trim().toLowerCase();
+
+    switch (normalizedMethod) {
+      case "cash":
+        return "Cash";
+
+      case "transfer":
+        return "Transfer Bank";
+
+      case "qris":
+        return "QRIS";
+
+      default:
+        return method || "-";
+    }
+  };
+
+  // =========================
+  // LOADING
+  // =========================
   if (loading) {
     return (
       <MainLayout>
         <section className="max-w-7xl mx-auto px-5 py-24">
-          <p className="text-center text-gray-500">
-            Memuat pesanan...
-          </p>
+          <div className="flex flex-col items-center justify-center">
+            <div className="w-10 h-10 border-4 border-amber-200 border-t-amber-700 rounded-full animate-spin" />
+
+            <p className="text-center text-gray-500 mt-4">
+              Memuat pesanan...
+            </p>
+          </div>
         </section>
       </MainLayout>
     );
@@ -111,7 +228,9 @@ export default function Orders() {
     <MainLayout>
       <section className="max-w-7xl mx-auto px-5 py-24">
 
-        {/* Header */}
+        {/* =========================
+            HEADER
+        ========================= */}
         <div className="mb-10">
           <p className="text-sm font-medium text-amber-700 uppercase tracking-widest mb-2">
             Admin
@@ -126,10 +245,14 @@ export default function Orders() {
           </p>
         </div>
 
-        {/* Empty */}
+        {/* =========================
+            EMPTY
+        ========================= */}
         {orders.length === 0 ? (
           <div className="border border-gray-200 rounded-2xl p-10 text-center">
-            <div className="text-5xl mb-4">📦</div>
+            <div className="text-5xl mb-4">
+              📦
+            </div>
 
             <h2 className="text-xl font-semibold text-gray-900">
               Belum ada pesanan
@@ -148,7 +271,9 @@ export default function Orders() {
                 className="border border-gray-200 rounded-2xl p-6 bg-white shadow-sm"
               >
 
-                {/* Order Header */}
+                {/* =========================
+                    ORDER HEADER
+                ========================= */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-5 border-b border-gray-200">
 
                   <div>
@@ -169,7 +294,7 @@ export default function Orders() {
 
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3">
 
-                    {/* Status Badge */}
+                    {/* STATUS BADGE */}
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusClass(
                         order.status
@@ -178,9 +303,9 @@ export default function Orders() {
                       {order.status}
                     </span>
 
-                    {/* Status Select */}
+                    {/* STATUS SELECT */}
                     <select
-                      value={order.status}
+                      value={order.status || "Pending"}
                       disabled={updatingId === order.id}
                       onChange={(e) =>
                         updateStatus(
@@ -210,47 +335,55 @@ export default function Orders() {
                   </div>
                 </div>
 
-                {/* Customer */}
+                {/* =========================
+                    CUSTOMER
+                ========================= */}
                 <div className="py-5 border-b border-gray-200">
 
-                  <h2 className="font-bold text-lg text-gray-900 mb-3">
+                  <h2 className="font-bold text-lg text-gray-900 mb-4">
                     Customer
                   </h2>
 
                   <div className="grid md:grid-cols-3 gap-4 text-sm">
 
+                    {/* NAMA */}
                     <div>
                       <p className="text-gray-500">
                         Nama
                       </p>
 
                       <p className="font-medium text-gray-900">
-                        {order.customer_name}
+                        {order.customer_name || "-"}
                       </p>
                     </div>
 
+                    {/* WHATSAPP */}
                     <div>
                       <p className="text-gray-500">
                         WhatsApp
                       </p>
 
                       <p className="font-medium text-gray-900">
-                        {order.phone}
+                        {order.phone || "-"}
                       </p>
                     </div>
 
+                    {/* PAYMENT METHOD */}
                     <div>
                       <p className="text-gray-500">
                         Pembayaran
                       </p>
 
                       <p className="font-medium text-gray-900">
-                        {order.payment_method}
+                        {getPaymentMethodLabel(
+                          order.payment?.payment_method
+                        )}
                       </p>
                     </div>
 
                   </div>
 
+                  {/* ALAMAT */}
                   <div className="mt-4">
 
                     <p className="text-gray-500 text-sm">
@@ -258,11 +391,12 @@ export default function Orders() {
                     </p>
 
                     <p className="font-medium text-gray-900">
-                      {order.address}
+                      {order.address || "-"}
                     </p>
 
                   </div>
 
+                  {/* CATATAN */}
                   {order.note && (
                     <div className="mt-4">
 
@@ -279,7 +413,95 @@ export default function Orders() {
 
                 </div>
 
-                {/* Order Items */}
+                {/* =========================
+                    PAYMENT
+                ========================= */}
+                <div className="py-5 border-b border-gray-200">
+
+                  <h2 className="font-bold text-lg text-gray-900 mb-4">
+                    Pembayaran
+                  </h2>
+
+                  <div className="grid md:grid-cols-3 gap-4">
+
+                    {/* METODE */}
+                    <div>
+                      <p className="text-sm text-gray-500">
+                        Metode Pembayaran
+                      </p>
+
+                      <p className="font-semibold text-gray-900 mt-1">
+                        {getPaymentMethodLabel(
+                          order.payment?.payment_method
+                        )}
+                      </p>
+                    </div>
+
+                    {/* STATUS */}
+                    <div>
+                      <p className="text-sm text-gray-500">
+                        Status Pembayaran
+                      </p>
+
+                      <span
+                        className={`inline-flex mt-2 px-3 py-1 rounded-full text-sm font-semibold ${getPaymentStatusClass(
+                          order.payment?.payment_status
+                        )}`}
+                      >
+                        {getPaymentStatusLabel(
+                          order.payment?.payment_status
+                        )}
+                      </span>
+                    </div>
+
+                    {/* AMOUNT */}
+                    <div>
+                      <p className="text-sm text-gray-500">
+                        Jumlah Pembayaran
+                      </p>
+
+                      <p className="font-semibold text-gray-900 mt-1">
+                        Rp{" "}
+                        {Number(
+                          order.payment?.amount || order.total || 0
+                        ).toLocaleString("id-ID")}
+                      </p>
+                    </div>
+
+                  </div>
+
+                  {/* SENDER INFO */}
+                  {order.payment?.sender_name && (
+                    <div className="mt-5 p-4 rounded-xl bg-gray-50">
+
+                      <p className="text-sm text-gray-500">
+                        Nama Pengirim
+                      </p>
+
+                      <p className="font-semibold text-gray-900 mt-1">
+                        {order.payment.sender_name}
+                      </p>
+
+                      {order.payment?.sender_account && (
+                        <>
+                          <p className="text-sm text-gray-500 mt-3">
+                            Nomor Rekening / Akun
+                          </p>
+
+                          <p className="font-semibold text-gray-900 mt-1">
+                            {order.payment.sender_account}
+                          </p>
+                        </>
+                      )}
+
+                    </div>
+                  )}
+
+                </div>
+
+                {/* =========================
+                    ORDER ITEMS
+                ========================= */}
                 <div className="py-5">
 
                   <h2 className="font-bold text-lg text-gray-900 mb-4">
@@ -294,6 +516,7 @@ export default function Orders() {
                         className="flex items-center justify-between gap-4"
                       >
 
+                        {/* PRODUCT */}
                         <div className="flex items-center gap-3">
 
                           {item.products?.image && (
@@ -307,24 +530,26 @@ export default function Orders() {
                           <div>
 
                             <p className="font-medium text-gray-900">
-                              {item.products?.name}
+                              {item.products?.name || "Produk"}
                             </p>
 
                             <p className="text-sm text-gray-500">
                               {item.quantity} × Rp{" "}
-                              {Number(item.price).toLocaleString(
-                                "id-ID"
-                              )}
+                              {Number(
+                                item.price
+                              ).toLocaleString("id-ID")}
                             </p>
 
                           </div>
 
                         </div>
 
-                        <p className="font-semibold text-gray-900">
+                        {/* SUBTOTAL */}
+                        <p className="font-semibold text-gray-900 whitespace-nowrap">
                           Rp{" "}
                           {(
-                            item.price * item.quantity
+                            Number(item.price) *
+                            Number(item.quantity)
                           ).toLocaleString("id-ID")}
                         </p>
 
@@ -335,7 +560,9 @@ export default function Orders() {
 
                 </div>
 
-                {/* Total */}
+                {/* =========================
+                    TOTAL
+                ========================= */}
                 <div className="border-t border-gray-200 pt-5 flex justify-between items-center">
 
                   <span className="text-gray-500">

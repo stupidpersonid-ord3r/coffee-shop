@@ -551,7 +551,7 @@ export default function OrderTracking() {
               </p>
 
               <p className="font-medium text-gray-900 mt-1">
-                {order.payment_method}
+                {payment?.payment_method?.toUpperCase()}
               </p>
             </div>
 

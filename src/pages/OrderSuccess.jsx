@@ -8,10 +8,92 @@ export default function OrderSuccess() {
   const navigate = useNavigate();
 
   const [order, setOrder] = useState(null);
+  const [payment, setPayment] = useState(null);
   const [items, setItems] = useState([]);
+
+  const [paymentForm, setPaymentForm] = useState({
+    sender_name: "",
+    sender_account: "",
+  });
+
   const [loading, setLoading] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
 
+  const [paymentToast, setPaymentToast] = useState({
+    show: false,
+    type: "",
+    message: "",
+    });
+
+  // =========================
+  // FETCH ORDER DATA
+  // =========================
+  useEffect(() => {
+    const fetchOrder = async () => {
+      try {
+        setLoading(true);
+
+        // Ambil data pesanan
+        const { data: orderData, error: orderError } = await supabase
+          .from("orders")
+          .select("*")
+          .eq("id", orderId)
+          .single();
+
+        if (orderError) {
+          throw orderError;
+        }
+
+        setOrder(orderData);
+
+        // Ambil data pembayaran
+        const { data: paymentData, error: paymentError } = await supabase
+          .from("payments")
+          .select("*")
+          .eq("order_id", orderData.id)
+          .maybeSingle();
+
+        if (paymentError) {
+          throw paymentError;
+        }
+
+        setPayment(paymentData);
+
+        // Ambil detail item pesanan
+        const { data: itemsData, error: itemsError } = await supabase
+          .from("order_items")
+          .select(`
+            *,
+            products (
+              name,
+              image
+            )
+          `)
+          .eq("order_id", orderData.id);
+
+        if (itemsError) {
+          throw itemsError;
+        }
+
+        setItems(itemsData || []);
+      } catch (error) {
+        console.error("Gagal mengambil data pesanan:", error);
+        setOrder(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (orderId) {
+      fetchOrder();
+    } else {
+      setLoading(false);
+    }
+  }, [orderId]);
+
+  // =========================
+  // COPY NOMOR PESANAN
+  // =========================
   const copyOrderNumber = async () => {
     try {
       await navigator.clipboard.writeText(order.order_number);
@@ -26,59 +108,99 @@ export default function OrderSuccess() {
     }
   };
 
-  useEffect(() => {
-    async function fetchOrder() {
-      try {
-        // =========================
-        // AMBIL ORDER
-        // =========================
-        const { data: orderData, error: orderError } =
-          await supabase
-            .from("orders")
-            .select("*")
-            .eq("id", orderId)
-            .single();
+  // =========================
+  // HANDLE INPUT PAYMENT
+  // =========================
+  const handlePaymentInput = (e) => {
+    const { name, value } = e.target;
 
-        if (orderError) {
-          throw orderError;
-        }
-
-        // =========================
-        // AMBIL ORDER ITEMS
-        // =========================
-        const { data: itemData, error: itemError } =
-          await supabase
-            .from("order_items")
-            .select(`
-              id,
-              quantity,
-              price,
-              products (
-                name,
-                image
-              )
-            `)
-            .eq("order_id", orderId);
-
-        if (itemError) {
-          throw itemError;
-        }
-
-        setOrder(orderData);
-        setItems(itemData || []);
-      } catch (error) {
-        console.error("Error mengambil order:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (orderId) {
-      fetchOrder();
-    }
-  }, [orderId]);
+    setPaymentForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   // =========================
+  // HANDLE KONFIRMASI PEMBAYARAN
+  // =========================
+  const handleConfirmPayment = async () => {
+  try {
+    if (!payment) return;
+
+    if (
+      payment.payment_method !== "cash" &&
+      (!paymentForm.sender_name.trim() ||
+        !paymentForm.sender_account.trim())
+    ) {
+      setPaymentToast({
+        show: true,
+        type: "error",
+        message: "Lengkapi nama pengirim dan nomor rekening.",
+      });
+
+      setTimeout(() => {
+        setPaymentToast((prev) => ({
+          ...prev,
+          show: false,
+        }));
+      }, 3000);
+
+      return;
+    }
+
+    const payload = {
+      payment_status: "waiting_verification",
+      paid_at: new Date().toISOString(),
+    };
+
+    if (payment.payment_method !== "cash") {
+      payload.sender_name = paymentForm.sender_name.trim();
+      payload.sender_account = paymentForm.sender_account.trim();
+    }
+
+    const { error } = await supabase
+      .from("payments")
+      .update(payload)
+      .eq("order_id", order.id);
+
+    if (error) throw error;
+
+    setPayment((prev) => ({
+      ...prev,
+      ...payload,
+    }));
+
+    setPaymentToast({
+      show: true,
+      type: "success",
+      message: "Konfirmasi pembayaran berhasil dikirim.",
+    });
+
+    setTimeout(() => {
+      setPaymentToast((prev) => ({
+        ...prev,
+        show: false,
+      }));
+    }, 3000);
+  } catch (err) {
+    console.error(err);
+
+    setPaymentToast({
+      show: true,
+      type: "error",
+      message: "Gagal mengirim konfirmasi pembayaran.",
+    });
+
+    setTimeout(() => {
+      setPaymentToast((prev) => ({
+        ...prev,
+        show: false,
+      }));
+    }, 3000);
+  }
+};
+
+    // =========================
   // LOADING
   // =========================
   if (loading) {
@@ -131,6 +253,87 @@ export default function OrderSuccess() {
 
   return (
     <MainLayout>
+
+{/* =========================
+    PAYMENT TOAST
+========================= */}
+{paymentToast.show && (
+  <div className="fixed top-24 right-5 z-[100] w-[calc(100%-40px)] max-w-sm animate-[slideIn_0.4s_ease-out]">
+    <div className="bg-white border border-gray-200 shadow-2xl rounded-2xl p-4">
+      <div className="flex items-center gap-3">
+
+        {/* ICON */}
+        <div
+          className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${
+            paymentToast.type === "success"
+              ? "bg-green-100 text-green-600"
+              : "bg-red-100 text-red-600"
+          }`}
+        >
+          {paymentToast.type === "success" ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M5 12l4 4L19 7"
+              />
+            </svg>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          )}
+        </div>
+
+        {/* TEXT */}
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-gray-900">
+            {paymentToast.type === "success"
+              ? "Pembayaran"
+              : "Perhatian"}
+          </p>
+
+          <p className="text-sm text-gray-500 mt-0.5">
+            {paymentToast.message}
+          </p>
+        </div>
+
+        {/* CLOSE */}
+        <button
+          onClick={() =>
+            setPaymentToast((prev) => ({
+              ...prev,
+              show: false,
+            }))
+          }
+          className="text-gray-400 hover:text-gray-700 text-xl transition shrink-0"
+          aria-label="Tutup"
+        >
+          ×
+        </button>
+
+      </div>
+    </div>
+  </div>
+)}
 
       {/* =========================
           COPY SUCCESS TOAST
@@ -226,7 +429,7 @@ export default function OrderSuccess() {
             </p>
 
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mt-3">
-              Pesanan Berhasil! 🎉
+              Pesanan Berhasil!
             </h1>
 
             <p className="text-gray-500 mt-4 max-w-xl mx-auto">
@@ -324,7 +527,7 @@ export default function OrderSuccess() {
                 </p>
 
                 <p className="font-medium text-gray-900 mt-1">
-                  {order.payment_method}
+                  {payment?.payment_method?.toUpperCase()}
                 </p>
               </div>
 
@@ -344,6 +547,163 @@ export default function OrderSuccess() {
             )}
 
           </div>
+
+          {/* =========================
+    PAYMENT INFO
+========================= */}
+<div className="p-6 md:p-8 border-b border-gray-200">
+
+  <h2 className="text-xl font-bold text-gray-900 mb-5">
+    Informasi Pembayaran
+  </h2>
+
+  {/* Status */}
+  <div className="mb-5">
+    <p className="text-sm text-gray-500">
+      Status Pembayaran
+    </p>
+
+    <span
+      className={`inline-block mt-2 px-4 py-2 rounded-full text-sm font-semibold ${
+        payment?.payment_status === "paid"
+          ? "bg-green-100 text-green-700"
+          : payment?.payment_status === "waiting_verification"
+          ? "bg-yellow-100 text-yellow-700"
+          : "bg-red-100 text-red-700"
+      }`}
+    >
+      {payment?.payment_status === "pending" &&
+        "Menunggu Pembayaran"}
+
+      {payment?.payment_status === "waiting_verification" &&
+        "Menunggu Verifikasi Admin"}
+
+      {payment?.payment_status === "paid" &&
+        "Pembayaran Berhasil"}
+    </span>
+  </div>
+
+  {/* CASH */}
+  {payment?.payment_method === "cash" && (
+    <div className="rounded-xl border p-5 bg-green-50">
+
+      <p className="font-bold text-lg">
+        💵 Pembayaran Cash
+      </p>
+
+      <p className="mt-3 text-gray-600">
+        Silakan lakukan pembayaran langsung kepada kasir.
+      </p>
+
+      {payment.payment_status === "pending" && (
+        <button
+          onClick={handleConfirmPayment}
+          className="mt-5 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl"
+        >
+          Konfirmasi Pembayaran
+        </button>
+      )}
+
+    </div>
+  )}
+
+  {/* TRANSFER */}
+  {payment?.payment_method === "transfer" && (
+    <div className="rounded-xl border p-5 bg-blue-50">
+
+      <p className="font-bold text-lg">
+        🏦 Transfer Bank
+      </p>
+
+      <div className="mt-4 space-y-1">
+        <p><b>BCA</b></p>
+        <p>1234567890</p>
+        <p>a.n Coffee Shop</p>
+      </div>
+
+      <div className="mt-6 space-y-3">
+
+        <input
+          type="text"
+          name="sender_name"
+          placeholder="Nama Pengirim"
+          value={paymentForm.sender_name}
+          onChange={handlePaymentInput}
+          className="w-full border rounded-xl p-3"
+        />
+
+        <input
+          type="text"
+          name="sender_account"
+          placeholder="Nomor Rekening"
+          value={paymentForm.sender_account}
+          onChange={handlePaymentInput}
+          className="w-full border rounded-xl p-3"
+        />
+
+      </div>
+
+      {payment.payment_status === "pending" && (
+        <button
+          onClick={handleConfirmPayment}
+          className="mt-5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl"
+        >
+          Konfirmasi Pembayaran
+        </button>
+      )}
+
+    </div>
+  )}
+
+  {/* QRIS */}
+  {payment?.payment_method === "qris" && (
+    <div className="rounded-xl border p-5 bg-purple-50">
+
+      <p className="font-bold text-lg">
+        📱 Pembayaran QRIS
+      </p>
+
+      <img
+        src="/images/qris.png"
+        alt="QRIS"
+        className="w-60 mx-auto mt-5"
+      />
+
+      <div className="mt-6 space-y-3">
+
+        <input
+          type="text"
+          name="sender_name"
+          placeholder="Nama Pengirim"
+          value={paymentForm.sender_name}
+          onChange={handlePaymentInput}
+          className="w-full border rounded-xl p-3"
+        />
+
+        <input
+          type="text"
+          name="sender_account"
+          placeholder="Nomor HP / DANA"
+          value={paymentForm.sender_account}
+          onChange={handlePaymentInput}
+          className="w-full border rounded-xl p-3"
+        />
+
+      </div>
+
+      {payment.payment_status === "pending" && (
+        <button
+          onClick={handleConfirmPayment}
+          className="mt-5 bg-purple-600 hover:bg-purple-700 text-white px-5 py-3 rounded-xl"
+        >
+          Konfirmasi Pembayaran
+        </button>
+      )}
+
+    </div>
+  )}
+
+</div>
 
           {/* =========================
               ORDER ITEMS

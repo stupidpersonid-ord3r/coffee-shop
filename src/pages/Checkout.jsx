@@ -9,12 +9,12 @@ export default function Checkout() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    customerName: "",
-    phone: "",
-    address: "",
-    note: "",
-    paymentMethod: "Cash",
-  });
+  customerName: "",
+  phone: "",
+  address: "",
+  note: "",
+  paymentMethod: "cash",
+});
 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -74,17 +74,17 @@ export default function Checkout() {
       // 1. SIMPAN ORDER
       // =========================
       const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          customer_name: form.customerName.trim(),
-          phone: form.phone.trim(),
-          address: form.address.trim(),
-          note: form.note.trim() || null,
-          payment_method: form.paymentMethod,
-          total: totalPrice,
-        })
-        .select("*")
-        .single();
+  .from("orders")
+  .insert({
+    customer_name: form.customerName.trim(),
+    phone: form.phone.trim(),
+    address: form.address.trim(),
+    note: form.note.trim() || null,
+    total: totalPrice,
+    status: "pending",
+  })
+  .select()
+  .single();
 
       if (orderError) {
         throw orderError;
@@ -116,12 +116,28 @@ export default function Checkout() {
       }
 
       // =========================
-      // 3. KOSONGKAN CART
+// 3. SIMPAN PAYMENT
+// =========================
+      const { error: paymentError } = await supabase
+        .from("payments")
+        .insert({
+          order_id: order.id,
+          payment_method: form.paymentMethod,
+          payment_status: "pending",
+          amount: totalPrice,
+        });
+
+        if (paymentError) {
+          throw paymentError;
+        }
+
+      // =========================
+      // 4. KOSONGKAN CART
       // =========================
       clearCart();
 
       // =========================
-      // 4. KE ORDER SUCCESS
+      // 5. KE ORDER SUCCESS
       // =========================
       navigate(`/order-success/${order.id}`, {
         replace: true,
@@ -276,63 +292,81 @@ export default function Checkout() {
                     </div>
 
                     {/* PAYMENT */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-3">
-                        Metode Pembayaran
-                      </label>
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-3">
+    Metode Pembayaran
+  </label>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 
-                        {/* CASH */}
-                        <label
-                          className={`flex items-center gap-3 border rounded-xl p-4 cursor-pointer transition ${
-                            form.paymentMethod === "Cash"
-                              ? "border-amber-600 bg-amber-50"
-                              : "border-gray-300 hover:border-amber-600"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="paymentMethod"
-                            value="Cash"
-                            checked={
-                              form.paymentMethod === "Cash"
-                            }
-                            onChange={handleChange}
-                            className="accent-amber-700"
-                          />
+    {/* CASH */}
+    <label
+      className={`flex items-center gap-3 border rounded-xl p-4 cursor-pointer transition ${
+        form.paymentMethod === "cash"
+          ? "border-amber-600 bg-amber-50"
+          : "border-gray-300 hover:border-amber-600"
+      }`}
+    >
+      <input
+        type="radio"
+        name="paymentMethod"
+        value="cash"
+        checked={form.paymentMethod === "cash"}
+        onChange={handleChange}
+        className="accent-amber-700"
+      />
 
-                          <span className="font-medium">
-                            Cash
-                          </span>
-                        </label>
+      <span className="font-medium">
+        💵 Cash
+      </span>
+    </label>
 
-                        {/* TRANSFER */}
-                        <label
-                          className={`flex items-center gap-3 border rounded-xl p-4 cursor-pointer transition ${
-                            form.paymentMethod === "Transfer"
-                              ? "border-amber-600 bg-amber-50"
-                              : "border-gray-300 hover:border-amber-600"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="paymentMethod"
-                            value="Transfer"
-                            checked={
-                              form.paymentMethod === "Transfer"
-                            }
-                            onChange={handleChange}
-                            className="accent-amber-700"
-                          />
+    {/* TRANSFER */}
+    <label
+      className={`flex items-center gap-3 border rounded-xl p-4 cursor-pointer transition ${
+        form.paymentMethod === "transfer"
+          ? "border-amber-600 bg-amber-50"
+          : "border-gray-300 hover:border-amber-600"
+      }`}
+    >
+      <input
+        type="radio"
+        name="paymentMethod"
+        value="transfer"
+        checked={form.paymentMethod === "transfer"}
+        onChange={handleChange}
+        className="accent-amber-700"
+      />
 
-                          <span className="font-medium">
-                            Transfer
-                          </span>
-                        </label>
+      <span className="font-medium">
+        🏦 Transfer
+      </span>
+    </label>
 
-                      </div>
-                    </div>
+    {/* QRIS */}
+    <label
+      className={`flex items-center gap-3 border rounded-xl p-4 cursor-pointer transition ${
+        form.paymentMethod === "qris"
+          ? "border-amber-600 bg-amber-50"
+          : "border-gray-300 hover:border-amber-600"
+      }`}
+    >
+      <input
+        type="radio"
+        name="paymentMethod"
+        value="qris"
+        checked={form.paymentMethod === "qris"}
+        onChange={handleChange}
+        className="accent-amber-700"
+      />
+
+      <span className="font-medium">
+        📱 QRIS
+      </span>
+    </label>
+
+  </div>
+</div>
 
                     {/* ERROR */}
                     {errorMessage && (
