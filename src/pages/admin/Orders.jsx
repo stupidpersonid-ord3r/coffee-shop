@@ -71,18 +71,23 @@ export default function Orders() {
     }
   };
 
+  // Status dibuat fleksibel agar:
+  // Pending, PENDING, pending, atau " Pending "
+  // tetap mendapatkan warna yang sama.
   const getStatusClass = (status) => {
-    switch (status) {
-      case "Pending":
+    const normalizedStatus = status?.trim().toLowerCase();
+
+    switch (normalizedStatus) {
+      case "pending":
         return "bg-yellow-100 text-yellow-700";
 
-      case "Processing":
+      case "processing":
         return "bg-blue-100 text-blue-700";
 
-      case "Ready":
+      case "ready":
         return "bg-green-100 text-green-700";
 
-      case "Completed":
+      case "completed":
         return "bg-red-100 text-red-700";
 
       default:
@@ -105,6 +110,7 @@ export default function Orders() {
   return (
     <MainLayout>
       <section className="max-w-7xl mx-auto px-5 py-24">
+
         {/* Header */}
         <div className="mb-10">
           <p className="text-sm font-medium text-amber-700 uppercase tracking-widest mb-2">
@@ -135,13 +141,16 @@ export default function Orders() {
           </div>
         ) : (
           <div className="space-y-6">
+
             {orders.map((order) => (
               <div
                 key={order.id}
                 className="border border-gray-200 rounded-2xl p-6 bg-white shadow-sm"
               >
+
                 {/* Order Header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-5 border-b border-gray-200">
+
                   <div>
                     <p className="text-sm text-gray-500">
                       Order ID
@@ -159,6 +168,8 @@ export default function Orders() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+
+                    {/* Status Badge */}
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusClass(
                         order.status
@@ -167,6 +178,7 @@ export default function Orders() {
                       {order.status}
                     </span>
 
+                    {/* Status Select */}
                     <select
                       value={order.status}
                       disabled={updatingId === order.id}
@@ -194,16 +206,19 @@ export default function Orders() {
                         Completed
                       </option>
                     </select>
+
                   </div>
                 </div>
 
                 {/* Customer */}
                 <div className="py-5 border-b border-gray-200">
+
                   <h2 className="font-bold text-lg text-gray-900 mb-3">
                     Customer
                   </h2>
 
                   <div className="grid md:grid-cols-3 gap-4 text-sm">
+
                     <div>
                       <p className="text-gray-500">
                         Nama
@@ -233,9 +248,11 @@ export default function Orders() {
                         {order.payment_method}
                       </p>
                     </div>
+
                   </div>
 
                   <div className="mt-4">
+
                     <p className="text-gray-500 text-sm">
                       Alamat
                     </p>
@@ -243,10 +260,12 @@ export default function Orders() {
                     <p className="font-medium text-gray-900">
                       {order.address}
                     </p>
+
                   </div>
 
                   {order.note && (
                     <div className="mt-4">
+
                       <p className="text-gray-500 text-sm">
                         Catatan
                       </p>
@@ -254,23 +273,29 @@ export default function Orders() {
                       <p className="font-medium text-gray-900">
                         {order.note}
                       </p>
+
                     </div>
                   )}
+
                 </div>
 
                 {/* Order Items */}
                 <div className="py-5">
+
                   <h2 className="font-bold text-lg text-gray-900 mb-4">
                     Pesanan
                   </h2>
 
                   <div className="space-y-4">
+
                     {order.order_items?.map((item) => (
                       <div
                         key={item.id}
                         className="flex items-center justify-between gap-4"
                       >
+
                         <div className="flex items-center gap-3">
+
                           {item.products?.image && (
                             <img
                               src={item.products.image}
@@ -280,6 +305,7 @@ export default function Orders() {
                           )}
 
                           <div>
+
                             <p className="font-medium text-gray-900">
                               {item.products?.name}
                             </p>
@@ -290,7 +316,9 @@ export default function Orders() {
                                 "id-ID"
                               )}
                             </p>
+
                           </div>
+
                         </div>
 
                         <p className="font-semibold text-gray-900">
@@ -299,13 +327,17 @@ export default function Orders() {
                             item.price * item.quantity
                           ).toLocaleString("id-ID")}
                         </p>
+
                       </div>
                     ))}
+
                   </div>
+
                 </div>
 
                 {/* Total */}
                 <div className="border-t border-gray-200 pt-5 flex justify-between items-center">
+
                   <span className="text-gray-500">
                     Total Pesanan
                   </span>
@@ -316,11 +348,15 @@ export default function Orders() {
                       "id-ID"
                     )}
                   </span>
+
                 </div>
+
               </div>
             ))}
+
           </div>
         )}
+
       </section>
     </MainLayout>
   );
