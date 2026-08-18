@@ -878,17 +878,6 @@ const handleCancelOrder = async () => {
 ========================= */}
 <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-[fadeUp_1s_ease-out]">
 
-  {/* PENDING → KONFIRMASI */}
-  {isPending && (
-    <button
-      onClick={scrollToPayment}
-      className="group px-6 py-4 rounded-2xl bg-green-600 text-white font-semibold shadow-md hover:bg-green-700 hover:shadow-lg active:scale-[0.98] transition flex items-center justify-center gap-3 sm:col-span-2"
-    >
-      <span>Konfirmasi Pembayaran</span>
-      <span className="group-hover:translate-y-1 transition">↓</span>
-    </button>
-  )}
-
   {/* WAITING / PAID */}
   {canTrack && (
     <button
