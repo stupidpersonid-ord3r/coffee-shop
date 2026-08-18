@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import { supabase } from "../lib/supabase";
 
@@ -195,9 +195,7 @@ export default function OrderTracking() {
     if (!order?.order_number) return;
 
     try {
-      await navigator.clipboard.writeText(
-        order.order_number
-      );
+      await navigator.clipboard.writeText(order.order_number);
 
       setCopySuccess(true);
 
@@ -205,10 +203,7 @@ export default function OrderTracking() {
         setCopySuccess(false);
       }, 2500);
     } catch (error) {
-      console.error(
-        "Gagal menyalin kode:",
-        error
-      );
+      console.error("Gagal menyalin kode:", error);
     }
   };
 
@@ -250,8 +245,7 @@ export default function OrderTracking() {
 
             const step = statusSteps.find(
               (item) =>
-                item.status.toLowerCase() ===
-                normalizedStatus
+                item.status.toLowerCase() === normalizedStatus
             );
 
             if (step) {
@@ -355,12 +349,27 @@ export default function OrderTracking() {
           setPayment(newPayment);
 
           // =========================
-          // PAYMENT BERHASIL
+          // PAYMENT BERUBAH
           // =========================
           if (
             payload.old?.payment_status !==
             newPayment.payment_status
           ) {
+            if (
+              newPayment.payment_status === "waiting_verification"
+            ) {
+              setNotification({
+                title: "Konfirmasi pembayaran diterima",
+                description:
+                  "Pembayaran kamu sedang menunggu verifikasi admin.",
+                icon: "⏳",
+              });
+
+              setTimeout(() => {
+                setNotification(null);
+              }, 5000);
+            }
+
             if (
               newPayment.payment_status === "paid"
             ) {
@@ -476,6 +485,115 @@ export default function OrderTracking() {
     );
   }
 
+  // =========================
+  // PAYMENT GUARD
+  // =========================
+  const normalizedPaymentStatus =
+    payment?.payment_status?.trim().toLowerCase();
+
+  const paymentNeedsConfirmation =
+    normalizedPaymentStatus === "pending" ||
+    normalizedPaymentStatus === "failed";
+
+  // =========================
+  // PAYMENT BELUM DIKONFIRMASI
+  // =========================
+  if (paymentNeedsConfirmation) {
+    return (
+      <MainLayout>
+        <section className="max-w-xl mx-auto px-5 py-24">
+
+          <div className="border border-amber-200 bg-amber-50 rounded-3xl p-8 md:p-10 text-center shadow-sm">
+
+            <div className="w-20 h-20 mx-auto rounded-full bg-amber-100 flex items-center justify-center text-4xl">
+              💳
+            </div>
+
+            <p className="text-sm font-semibold tracking-[0.2em] uppercase text-amber-700 mt-6">
+              Payment Required
+            </p>
+
+            <h1 className="text-3xl font-bold text-gray-900 mt-3">
+              Konfirmasi Pembayaran Diperlukan
+            </h1>
+
+            <p className="text-gray-600 mt-4 leading-relaxed">
+              Kamu belum melakukan konfirmasi pembayaran.
+              Silakan selesaikan pembayaran dan konfirmasi
+              terlebih dahulu agar pesanan dapat diproses
+              dan statusnya bisa dilacak.
+            </p>
+
+            <div className="mt-8 p-4 bg-white/70 rounded-2xl text-left">
+
+              <div className="flex justify-between gap-4">
+                <span className="text-sm text-gray-500">
+                  Nomor Pesanan
+                </span>
+
+                <span className="font-semibold text-gray-900 text-right">
+                  #{order.order_number}
+                </span>
+              </div>
+
+              <div className="flex justify-between gap-4 mt-3">
+                <span className="text-sm text-gray-500">
+                  Pembayaran
+                </span>
+
+                <span className="font-semibold text-gray-900">
+                  {getPaymentMethodLabel(
+                    payment?.payment_method
+                  )}
+                </span>
+              </div>
+
+              <div className="flex justify-between gap-4 mt-3">
+                <span className="text-sm text-gray-500">
+                  Status
+                </span>
+
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${getPaymentStatusColor(
+                    payment?.payment_status
+                  )}`}
+                >
+                  {getPaymentStatusLabel(
+                    payment?.payment_status
+                  )}
+                </span>
+              </div>
+
+            </div>
+
+            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
+
+              <Link
+                to={`/order-success/${order.id}`}
+                className="px-6 py-3 rounded-xl bg-amber-700 text-white font-semibold hover:bg-amber-800 transition"
+              >
+                Konfirmasi Pembayaran
+              </Link>
+
+              <Link
+                to="/"
+                className="px-6 py-3 rounded-xl border border-gray-300 bg-white text-gray-700 font-semibold hover:bg-gray-100 transition"
+              >
+                Beranda
+              </Link>
+
+            </div>
+
+          </div>
+
+        </section>
+      </MainLayout>
+    );
+  }
+
+  // =========================
+  // MAIN TRACKING
+  // =========================
   return (
     <MainLayout>
 
@@ -483,7 +601,7 @@ export default function OrderTracking() {
           COPY SUCCESS NOTIFICATION
       ========================= */}
       {copySuccess && (
-        <div className="fixed top-24 right-5 z-50 w-[calc(100%-40px)] max-w-sm">
+        <div className="fixed top-24 right-5 z-50 w-[calc(100%-40px)] max-w-sm animate-[slideIn_0.4s_ease-out]">
 
           <div className="bg-white border border-gray-200 shadow-2xl rounded-2xl p-4">
 
@@ -521,7 +639,7 @@ export default function OrderTracking() {
           REALTIME NOTIFICATION
       ========================= */}
       {notification && (
-        <div className="fixed top-24 right-5 z-50 w-[calc(100%-40px)] max-w-sm">
+        <div className="fixed top-24 right-5 z-50 w-[calc(100%-40px)] max-w-sm animate-[slideIn_0.4s_ease-out]">
 
           <div className="bg-white border border-green-200 shadow-2xl rounded-2xl p-5">
 
@@ -581,6 +699,67 @@ export default function OrderTracking() {
           </p>
 
         </div>
+
+        {/* =========================
+            WAITING VERIFICATION BANNER
+        ========================= */}
+        {normalizedPaymentStatus === "waiting_verification" && (
+          <div className="mb-8 border border-yellow-200 bg-yellow-50 rounded-2xl p-5 md:p-6">
+
+            <div className="flex items-start gap-4">
+
+              <div className="w-12 h-12 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center text-xl shrink-0">
+                ⏳
+              </div>
+
+              <div>
+
+                <h2 className="font-bold text-yellow-900 text-lg">
+                  Menunggu Verifikasi Pembayaran
+                </h2>
+
+                <p className="text-sm text-yellow-800 mt-1 leading-relaxed">
+                  Bukti pembayaran telah diterima.
+                  Tim kami sedang memverifikasi pembayaran
+                  kamu. Mohon tunggu beberapa saat.
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
+        {/* =========================
+            PAID BANNER
+        ========================= */}
+        {normalizedPaymentStatus === "paid" && (
+          <div className="mb-8 border border-green-200 bg-green-50 rounded-2xl p-5 md:p-6">
+
+            <div className="flex items-start gap-4">
+
+              <div className="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xl shrink-0">
+                ✓
+              </div>
+
+              <div>
+
+                <h2 className="font-bold text-green-900 text-lg">
+                  Pembayaran Berhasil
+                </h2>
+
+                <p className="text-sm text-green-800 mt-1">
+                  Pembayaran kamu sudah diverifikasi.
+                  Pesanan akan diproses oleh tim kami.
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+        )}
 
         {/* =========================
             ORDER INFO
@@ -924,13 +1103,11 @@ export default function OrderTracking() {
 
                 {/* SUBTOTAL */}
                 <p className="font-semibold text-gray-900 whitespace-nowrap">
-
                   Rp{" "}
                   {(
                     Number(item.price) *
                     Number(item.quantity)
                   ).toLocaleString("id-ID")}
-
                 </p>
 
               </div>

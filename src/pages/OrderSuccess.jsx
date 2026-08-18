@@ -23,7 +23,15 @@ export default function OrderSuccess() {
     show: false,
     type: "",
     message: "",
-    });
+  });
+
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelToast, setCancelToast] = useState({
+    show: false,
+    type: "",
+    message: "",
+  });
 
   // =========================
   // FETCH ORDER DATA
@@ -121,16 +129,19 @@ export default function OrderSuccess() {
   };
 
   // =========================
-  // HANDLE KONFIRMASI PEMBAYARAN
-  // =========================
-  const handleConfirmPayment = async () => {
+// HANDLE KONFIRMASI PEMBAYARAN
+// =========================
+const handleConfirmPayment = async () => {
   try {
     if (!payment) return;
 
+    // Validasi transfer & QRIS
     if (
       payment.payment_method !== "cash" &&
-      (!paymentForm.sender_name.trim() ||
-        !paymentForm.sender_account.trim())
+      (
+        !paymentForm.sender_name.trim() ||
+        !paymentForm.sender_account.trim()
+      )
     ) {
       setPaymentToast({
         show: true,
@@ -177,13 +188,10 @@ export default function OrderSuccess() {
     });
 
     setTimeout(() => {
-      setPaymentToast((prev) => ({
-        ...prev,
-        show: false,
-      }));
-    }, 3000);
+      navigate(`/order-tracking/${order.id}`);
+    }, 1200);
   } catch (err) {
-    console.error(err);
+    console.error("Gagal mengirim konfirmasi pembayaran:", err);
 
     setPaymentToast({
       show: true,
@@ -200,7 +208,58 @@ export default function OrderSuccess() {
   }
 };
 
-    // =========================
+// =========================
+// HANDLE CANCEL ORDER
+// =========================
+const handleCancelOrder = async () => {
+  if (!order) return;
+
+  try {
+    setCancelLoading(true);
+
+    const { error } = await supabase.rpc("cancel_unpaid_order", {
+      p_order: order.id,
+    });
+
+    if (error) throw error;
+
+    setCancelToast({
+      show: true,
+      type: "success",
+      message: "Pesanan berhasil dibatalkan.",
+    });
+
+    setTimeout(() => {
+      navigate("/menu");
+    }, 1500);
+  } catch (err) {
+    console.error(err);
+
+    setCancelToast({
+      show: true,
+      type: "error",
+      message: "Pesanan tidak dapat dibatalkan.",
+    });
+  } finally {
+    setCancelLoading(false);
+    setShowCancelModal(false);
+  }
+};
+  // =========================
+  // SCROLL KE PEMBAYARAN
+  // =========================
+  const scrollToPayment = () => {
+    const paymentSection = document.getElementById("payment-section");
+
+    if (paymentSection) {
+      paymentSection.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  };
+
+  // =========================
   // LOADING
   // =========================
   if (loading) {
@@ -251,89 +310,128 @@ export default function OrderSuccess() {
     );
   }
 
+  const paymentStatus = payment?.payment_status;
+
+  const canTrack =
+    paymentStatus === "waiting_verification" ||
+    paymentStatus === "paid";
+
+  const isPending = paymentStatus === "pending";
+
   return (
     <MainLayout>
 
-{/* =========================
-    PAYMENT TOAST
-========================= */}
-{paymentToast.show && (
+  {cancelToast.show && (
   <div className="fixed top-24 right-5 z-[100] w-[calc(100%-40px)] max-w-sm animate-[slideIn_0.4s_ease-out]">
     <div className="bg-white border border-gray-200 shadow-2xl rounded-2xl p-4">
+
       <div className="flex items-center gap-3">
 
-        {/* ICON */}
         <div
-          className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${
-            paymentToast.type === "success"
+          className={`w-11 h-11 rounded-full flex items-center justify-center ${
+            cancelToast.type === "success"
               ? "bg-green-100 text-green-600"
               : "bg-red-100 text-red-600"
           }`}
         >
-          {paymentToast.type === "success" ? (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              className="w-5 h-5"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M5 12l4 4L19 7"
-              />
-            </svg>
-          ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              className="w-5 h-5"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          )}
+          {cancelToast.type === "success" ? "✓" : "✕"}
         </div>
 
-        {/* TEXT */}
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-gray-900">
-            {paymentToast.type === "success"
-              ? "Pembayaran"
-              : "Perhatian"}
+        <div className="flex-1">
+          <p className="font-semibold">
+            {cancelToast.type === "success"
+              ? "Pesanan"
+              : "Pembatalan"}
           </p>
 
-          <p className="text-sm text-gray-500 mt-0.5">
-            {paymentToast.message}
+          <p className="text-sm text-gray-500">
+            {cancelToast.message}
           </p>
         </div>
-
-        {/* CLOSE */}
-        <button
-          onClick={() =>
-            setPaymentToast((prev) => ({
-              ...prev,
-              show: false,
-            }))
-          }
-          className="text-gray-400 hover:text-gray-700 text-xl transition shrink-0"
-          aria-label="Tutup"
-        >
-          ×
-        </button>
 
       </div>
+
     </div>
   </div>
 )}
+
+      {/* =========================
+          PAYMENT TOAST
+      ========================= */}
+      {paymentToast.show && (
+        <div className="fixed top-24 right-5 z-[100] w-[calc(100%-40px)] max-w-sm animate-[slideIn_0.4s_ease-out]">
+          <div className="bg-white border border-gray-200 shadow-2xl rounded-2xl p-4">
+            <div className="flex items-center gap-3">
+
+              <div
+                className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${
+                  paymentToast.type === "success"
+                    ? "bg-green-100 text-green-600"
+                    : "bg-red-100 text-red-600"
+                }`}
+              >
+                {paymentToast.type === "success" ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    className="w-5 h-5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 12l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    className="w-5 h-5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900">
+                  {paymentToast.type === "success"
+                    ? "Pembayaran"
+                    : "Perhatian"}
+                </p>
+
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {paymentToast.message}
+                </p>
+              </div>
+
+              <button
+                onClick={() =>
+                  setPaymentToast((prev) => ({
+                    ...prev,
+                    show: false,
+                  }))
+                }
+                className="text-gray-400 hover:text-gray-700 text-xl transition shrink-0"
+                aria-label="Tutup"
+              >
+                ×
+              </button>
+
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* =========================
           COPY SUCCESS TOAST
@@ -341,10 +439,8 @@ export default function OrderSuccess() {
       {copySuccess && (
         <div className="fixed top-24 right-5 z-[100] w-[calc(100%-40px)] max-w-sm animate-[slideIn_0.4s_ease-out]">
           <div className="bg-white border border-gray-200 shadow-2xl rounded-2xl p-4">
-
             <div className="flex items-center gap-3">
 
-              {/* ICON */}
               <div className="w-11 h-11 rounded-full bg-green-100 text-green-600 flex items-center justify-center shrink-0">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -362,7 +458,6 @@ export default function OrderSuccess() {
                 </svg>
               </div>
 
-              {/* TEXT */}
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-gray-900">
                   Nomor pesanan disalin
@@ -373,7 +468,6 @@ export default function OrderSuccess() {
                 </p>
               </div>
 
-              {/* CLOSE */}
               <button
                 onClick={() => setCopySuccess(false)}
                 className="text-gray-400 hover:text-gray-700 text-xl transition shrink-0"
@@ -383,7 +477,6 @@ export default function OrderSuccess() {
               </button>
 
             </div>
-
           </div>
         </div>
       )}
@@ -395,13 +488,10 @@ export default function OrderSuccess() {
         ========================= */}
         <div className="text-center mb-10">
 
-          {/* Outer Circle */}
           <div className="relative w-28 h-28 mx-auto">
 
-            {/* Pulse */}
             <div className="absolute inset-0 rounded-full bg-green-200 animate-ping opacity-30" />
 
-            {/* Main Circle */}
             <div className="relative w-28 h-28 rounded-full bg-green-100 flex items-center justify-center shadow-lg">
               <div className="w-20 h-20 rounded-full bg-green-500 flex items-center justify-center animate-[scaleIn_0.5s_ease-out]">
                 <svg
@@ -420,10 +510,11 @@ export default function OrderSuccess() {
                 </svg>
               </div>
             </div>
+
           </div>
 
-          {/* Heading */}
           <div className="mt-8 animate-[fadeUp_0.6s_ease-out]">
+
             <p className="text-sm font-semibold tracking-[0.25em] uppercase text-green-600">
               Order Confirmed
             </p>
@@ -434,10 +525,40 @@ export default function OrderSuccess() {
 
             <p className="text-gray-500 mt-4 max-w-xl mx-auto">
               Terima kasih! Pesanan kamu sudah berhasil
-              diterima dan sedang menunggu untuk diproses.
+              diterima.
             </p>
+
           </div>
         </div>
+
+        {/* =========================
+            PAYMENT WARNING
+        ========================= */}
+        {isPending && (
+          <div className="mb-6 rounded-2xl border border-yellow-200 bg-yellow-50 p-5 animate-[fadeUp_0.7s_ease-out]">
+            <div className="flex gap-4">
+
+              <div className="w-11 h-11 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center shrink-0">
+                <span className="text-xl">
+                  !
+                </span>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-yellow-900">
+                  Konfirmasi Pembayaran Diperlukan
+                </h3>
+
+                <p className="text-sm text-yellow-800 mt-1">
+                  Silakan lakukan pembayaran dan kirim
+                  konfirmasi terlebih dahulu sebelum
+                  melacak pesanan.
+                </p>
+              </div>
+
+            </div>
+          </div>
+        )}
 
         {/* =========================
             ORDER CARD
@@ -465,7 +586,6 @@ export default function OrderSuccess() {
                 </p>
               </div>
 
-              {/* Status */}
               <div>
                 <p className="text-sm text-gray-500 mb-2">
                   Status Pesanan
@@ -533,7 +653,6 @@ export default function OrderSuccess() {
 
             </div>
 
-            {/* Note */}
             {order.note && (
               <div className="mt-5 p-4 bg-gray-50 rounded-xl">
                 <p className="text-sm text-gray-500">
@@ -549,114 +668,168 @@ export default function OrderSuccess() {
           </div>
 
           {/* =========================
-    PAYMENT INFO
+              PAYMENT INFO
+          ========================= */}
+          <div
+            id="payment-section"
+            className="p-6 md:p-8 border-b border-gray-200"
+          >
+
+            <h2 className="text-xl font-bold text-gray-900 mb-5">
+              Informasi Pembayaran
+            </h2>
+
+            {/* Status */}
+            <div className="mb-5">
+
+              <p className="text-sm text-gray-500">
+                Status Pembayaran
+              </p>
+
+              <span
+                className={`inline-block mt-2 px-4 py-2 rounded-full text-sm font-semibold ${
+                  payment?.payment_status === "paid"
+                    ? "bg-green-100 text-green-700"
+                    : payment?.payment_status === "waiting_verification"
+                    ? "bg-yellow-100 text-yellow-700"
+                    : "bg-red-100 text-red-700"
+                }`}
+              >
+                {payment?.payment_status === "pending" &&
+                  "Menunggu Pembayaran"}
+
+                {payment?.payment_status === "waiting_verification" &&
+                  "Menunggu Verifikasi Admin"}
+
+                {payment?.payment_status === "paid" &&
+                  "Pembayaran Berhasil"}
+              </span>
+
+            </div>
+
+            {/* =========================
+                WAITING VERIFICATION
+            ========================= */}
+            {payment?.payment_status === "waiting_verification" && (
+              <div className="rounded-xl border border-yellow-200 p-5 bg-yellow-50">
+
+                <p className="font-bold text-lg text-yellow-900">
+                  Pembayaran sedang diverifikasi
+                </p>
+
+                <p className="mt-2 text-yellow-800">
+                  Konfirmasi pembayaran kamu sudah diterima.
+                  Tim kami sedang memverifikasi pembayaran.
+                </p>
+
+              </div>
+            )}
+
+            {/* =========================
+                PAID
+            ========================= */}
+            {payment?.payment_status === "paid" && (
+              <div className="rounded-xl border border-green-200 p-5 bg-green-50">
+
+                <p className="font-bold text-lg text-green-900">
+                  Pembayaran Berhasil
+                </p>
+
+                <p className="mt-2 text-green-800">
+                  Pembayaran kamu sudah diverifikasi oleh admin.
+                </p>
+
+              </div>
+            )}
+
+            {/* =========================
+                CASH
+            ========================= */}
+            {payment?.payment_method === "cash" &&
+              payment?.payment_status === "pending" && (
+                <div className="rounded-xl border p-5 bg-green-50">
+
+                  <p className="font-bold text-lg">
+                    💵 Pembayaran Cash
+                  </p>
+
+                  <p className="mt-3 text-gray-600">
+                    Silakan lakukan pembayaran langsung kepada
+                    kasir.
+                  </p>
+
+                  <button
+                    onClick={handleConfirmPayment}
+                    className="mt-5 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-semibold transition"
+                  >
+                    Konfirmasi Pembayaran
+                  </button>
+
+                </div>
+              )}
+
+            {/* =========================
+                TRANSFER
+            ========================= */}
+            {payment?.payment_method === "transfer" &&
+              payment?.payment_status === "pending" && (
+                <div className="rounded-xl border p-5 bg-blue-50">
+
+                  <p className="font-bold text-lg">
+                    🏦 Transfer Bank
+                  </p>
+
+                  <div className="mt-4 space-y-1">
+                    <p>
+                      <b>BCA</b>
+                    </p>
+
+                    <p>
+                      1234567890
+                    </p>
+
+                    <p>
+                      a.n Coffee Shop
+                    </p>
+                  </div>
+
+                  <div className="mt-6 space-y-3">
+
+                    <input
+                      type="text"
+                      name="sender_name"
+                      placeholder="Nama Pengirim"
+                      value={paymentForm.sender_name}
+                      onChange={handlePaymentInput}
+                      className="w-full border rounded-xl p-3"
+                    />
+
+                    <input
+                      type="text"
+                      name="sender_account"
+                      placeholder="Nomor Rekening"
+                      value={paymentForm.sender_account}
+                      onChange={handlePaymentInput}
+                      className="w-full border rounded-xl p-3"
+                    />
+
+                  </div>
+
+                  <button
+                    onClick={handleConfirmPayment}
+                    className="mt-5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-semibold transition"
+                  >
+                    Konfirmasi Pembayaran
+                  </button>
+
+                </div>
+              )}
+
+            {/* =========================
+    QRIS
 ========================= */}
-<div className="p-6 md:p-8 border-b border-gray-200">
-
-  <h2 className="text-xl font-bold text-gray-900 mb-5">
-    Informasi Pembayaran
-  </h2>
-
-  {/* Status */}
-  <div className="mb-5">
-    <p className="text-sm text-gray-500">
-      Status Pembayaran
-    </p>
-
-    <span
-      className={`inline-block mt-2 px-4 py-2 rounded-full text-sm font-semibold ${
-        payment?.payment_status === "paid"
-          ? "bg-green-100 text-green-700"
-          : payment?.payment_status === "waiting_verification"
-          ? "bg-yellow-100 text-yellow-700"
-          : "bg-red-100 text-red-700"
-      }`}
-    >
-      {payment?.payment_status === "pending" &&
-        "Menunggu Pembayaran"}
-
-      {payment?.payment_status === "waiting_verification" &&
-        "Menunggu Verifikasi Admin"}
-
-      {payment?.payment_status === "paid" &&
-        "Pembayaran Berhasil"}
-    </span>
-  </div>
-
-  {/* CASH */}
-  {payment?.payment_method === "cash" && (
-    <div className="rounded-xl border p-5 bg-green-50">
-
-      <p className="font-bold text-lg">
-        💵 Pembayaran Cash
-      </p>
-
-      <p className="mt-3 text-gray-600">
-        Silakan lakukan pembayaran langsung kepada kasir.
-      </p>
-
-      {payment.payment_status === "pending" && (
-        <button
-          onClick={handleConfirmPayment}
-          className="mt-5 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl"
-        >
-          Konfirmasi Pembayaran
-        </button>
-      )}
-
-    </div>
-  )}
-
-  {/* TRANSFER */}
-  {payment?.payment_method === "transfer" && (
-    <div className="rounded-xl border p-5 bg-blue-50">
-
-      <p className="font-bold text-lg">
-        🏦 Transfer Bank
-      </p>
-
-      <div className="mt-4 space-y-1">
-        <p><b>BCA</b></p>
-        <p>1234567890</p>
-        <p>a.n Coffee Shop</p>
-      </div>
-
-      <div className="mt-6 space-y-3">
-
-        <input
-          type="text"
-          name="sender_name"
-          placeholder="Nama Pengirim"
-          value={paymentForm.sender_name}
-          onChange={handlePaymentInput}
-          className="w-full border rounded-xl p-3"
-        />
-
-        <input
-          type="text"
-          name="sender_account"
-          placeholder="Nomor Rekening"
-          value={paymentForm.sender_account}
-          onChange={handlePaymentInput}
-          className="w-full border rounded-xl p-3"
-        />
-
-      </div>
-
-      {payment.payment_status === "pending" && (
-        <button
-          onClick={handleConfirmPayment}
-          className="mt-5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl"
-        >
-          Konfirmasi Pembayaran
-        </button>
-      )}
-
-    </div>
-  )}
-
-  {/* QRIS */}
-  {payment?.payment_method === "qris" && (
+{payment?.payment_method === "qris" &&
+  payment?.payment_status === "pending" && (
     <div className="rounded-xl border p-5 bg-purple-50">
 
       <p className="font-bold text-lg">
@@ -670,7 +843,6 @@ export default function OrderSuccess() {
       />
 
       <div className="mt-6 space-y-3">
-
         <input
           type="text"
           name="sender_name"
@@ -688,229 +860,205 @@ export default function OrderSuccess() {
           onChange={handlePaymentInput}
           className="w-full border rounded-xl p-3"
         />
-
       </div>
 
-      {payment.payment_status === "pending" && (
-        <button
-          onClick={handleConfirmPayment}
-          className="mt-5 bg-purple-600 hover:bg-purple-700 text-white px-5 py-3 rounded-xl"
-        >
-          Konfirmasi Pembayaran
-        </button>
-      )}
+      <button
+        onClick={handleConfirmPayment}
+        className="mt-5 bg-purple-600 hover:bg-purple-700 text-white px-5 py-3 rounded-xl font-semibold transition"
+      >
+        Konfirmasi Pembayaran
+      </button>
 
     </div>
+)}
+
+    </div>
+        {/* =========================
+    ACTION BUTTONS
+========================= */}
+<div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-[fadeUp_1s_ease-out]">
+
+  {/* PENDING → KONFIRMASI */}
+  {isPending && (
+    <button
+      onClick={scrollToPayment}
+      className="group px-6 py-4 rounded-2xl bg-green-600 text-white font-semibold shadow-md hover:bg-green-700 hover:shadow-lg active:scale-[0.98] transition flex items-center justify-center gap-3 sm:col-span-2"
+    >
+      <span>Konfirmasi Pembayaran</span>
+      <span className="group-hover:translate-y-1 transition">↓</span>
+    </button>
   )}
+
+  {/* WAITING / PAID */}
+  {canTrack && (
+    <button
+      onClick={() => navigate(`/order-tracking/${order.id}`)}
+      className="group px-6 py-4 rounded-2xl bg-amber-700 text-white font-semibold shadow-md hover:bg-amber-800 hover:shadow-lg active:scale-[0.98] transition flex items-center justify-center gap-3"
+    >
+      <span>Lacak Pesanan</span>
+      <span className="group-hover:translate-x-1 transition">→</span>
+    </button>
+  )}
+
+  {/* COPY */}
+  <button
+    onClick={copyOrderNumber}
+    className="px-6 py-4 rounded-2xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 active:scale-[0.98] transition flex items-center justify-center gap-2"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="w-5 h-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+
+    Salin Nomor Pesanan
+  </button>
+
+  {/* CANCEL */}
+  {payment?.payment_status === "pending" && (
+    <button
+      onClick={() => setShowCancelModal(true)}
+      disabled={cancelLoading}
+      className="px-6 py-4 rounded-2xl border border-red-300 text-red-600 font-semibold hover:bg-red-50 transition disabled:opacity-60"
+    >
+      {cancelLoading ? "Membatalkan..." : "Batalkan Pesanan"}
+    </button>
+  )}
+
+  {/* BACK */}
+  <button
+    onClick={() => navigate("/menu")}
+    className="px-6 py-4 rounded-2xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 active:scale-[0.98] transition sm:col-span-2"
+  >
+    Kembali ke Menu
+  </button>
+
+</div>
+{/* =========================
+    INFO
+========================= */}
+<div className="mt-8 text-center">
+  {isPending ? (
+    <p className="text-sm text-gray-500">
+      Lakukan pembayaran dan konfirmasi terlebih dahulu
+      untuk melacak pesanan.
+    </p>
+  ) : (
+    <p className="text-sm text-gray-500">
+      Simpan nomor pesanan kamu untuk melihat status
+      pesanan kapan saja.
+    </p>
+  )}
+</div>
+
+{/* =========================
+    CUSTOM ANIMATION
+========================= */}
+<style>
+  {`
+    @keyframes scaleIn {
+      0% {
+        transform: scale(0);
+        opacity: 0;
+      }
+
+      70% {
+        transform: scale(1.1);
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    @keyframes checkDraw {
+      0% {
+        stroke-dasharray: 50;
+        stroke-dashoffset: 50;
+      }
+
+      100% {
+        stroke-dasharray: 50;
+        stroke-dashoffset: 0;
+      }
+    }
+
+    @keyframes fadeUp {
+      0% {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  `}
+</style>
 
 </div>
 
-          {/* =========================
-              ORDER ITEMS
-          ========================= */}
-          <div className="p-6 md:p-8">
+</section>
 
-            <h2 className="text-xl font-bold text-gray-900 mb-5">
-              Detail Pesanan
-            </h2>
+{/* =========================
+    CANCEL MODAL
+========================= */}
+{showCancelModal && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
 
-            <div className="space-y-4">
+      <h2 className="text-xl font-bold">
+        Batalkan Pesanan?
+      </h2>
 
-              {items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between gap-4 p-3 rounded-xl hover:bg-gray-50 transition"
-                >
+      <p className="mt-3 text-gray-600">
+        Pesanan yang belum dibayar akan dihapus secara permanen.
+        Tindakan ini tidak dapat dibatalkan.
+      </p>
 
-                  {/* Product */}
-                  <div className="flex items-center gap-4">
+      <div className="flex justify-end gap-3 mt-6">
+        <button
+          onClick={() => setShowCancelModal(false)}
+          className="px-5 py-2 rounded-xl border"
+        >
+          Tidak
+        </button>
 
-                    {item.products?.image && (
-                      <img
-                        src={item.products.image}
-                        alt={item.products.name}
-                        className="w-16 h-16 rounded-xl object-cover"
-                      />
-                    )}
+        <button
+          disabled={cancelLoading}
+          onClick={handleCancelOrder}
+          className="px-5 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+        >
+          {cancelLoading
+            ? "Membatalkan..."
+            : "Ya, Batalkan"}
+        </button>
+      </div>
 
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {item.products?.name}
-                      </p>
+    </div>
+  </div>
+)}
 
-                      <p className="text-sm text-gray-500 mt-1">
-                        {item.quantity} × Rp{" "}
-                        {Number(item.price).toLocaleString(
-                          "id-ID"
-                        )}
-                      </p>
-                    </div>
-
-                  </div>
-
-                  {/* Subtotal */}
-                  <p className="font-semibold text-gray-900 whitespace-nowrap">
-                    Rp{" "}
-                    {(
-                      Number(item.price) *
-                      item.quantity
-                    ).toLocaleString("id-ID")}
-                  </p>
-
-                </div>
-              ))}
-
-            </div>
-
-            {/* Total */}
-            <div className="border-t border-gray-200 mt-6 pt-6 flex justify-between items-center">
-
-              <span className="text-gray-500">
-                Total Pesanan
-              </span>
-
-              <span className="text-2xl md:text-3xl font-bold text-gray-900">
-                Rp{" "}
-                {Number(order.total).toLocaleString(
-                  "id-ID"
-                )}
-              </span>
-
-            </div>
-          </div>
-
-        </div>
-
-        {/* =========================
-            ACTION BUTTONS
-        ========================= */}
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-[fadeUp_1s_ease-out]">
-
-          {/* TRACK ORDER */}
-          <button
-            onClick={() =>
-              navigate(`/order-tracking/${order.id}`)
-            }
-            className="group px-6 py-4 rounded-2xl bg-amber-700 text-white font-semibold shadow-md hover:bg-amber-800 hover:shadow-lg active:scale-[0.98] transition flex items-center justify-center gap-3"
-          >
-            <span>
-              Lacak Pesanan
-            </span>
-
-            <span className="group-hover:translate-x-1 transition">
-              →
-            </span>
-          </button>
-
-          {/* COPY ORDER NUMBER */}
-          <button
-            onClick={copyOrderNumber}
-            className="px-6 py-4 rounded-2xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 active:scale-[0.98] transition flex items-center justify-center gap-2"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <rect
-                x="9"
-                y="9"
-                width="11"
-                height="11"
-                rx="2"
-              />
-
-              <path
-                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-              />
-            </svg>
-
-            Salin Nomor Pesanan
-          </button>
-
-          {/* BACK TO MENU */}
-          <button
-            onClick={() => navigate("/menu")}
-            className="px-6 py-4 rounded-2xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 active:scale-[0.98] transition sm:col-span-2"
-          >
-            Kembali ke Menu
-          </button>
-
-        </div>
-
-        {/* =========================
-            INFO
-        ========================= */}
-        <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500">
-            Simpan nomor pesanan kamu untuk melihat
-            status pesanan kapan saja.
-          </p>
-        </div>
-
-        {/* =========================
-            CUSTOM ANIMATION
-        ========================= */}
-        <style>
-          {`
-            @keyframes scaleIn {
-              0% {
-                transform: scale(0);
-                opacity: 0;
-              }
-
-              70% {
-                transform: scale(1.1);
-              }
-
-              100% {
-                transform: scale(1);
-                opacity: 1;
-              }
-            }
-
-            @keyframes checkDraw {
-              0% {
-                stroke-dasharray: 50;
-                stroke-dashoffset: 50;
-              }
-
-              100% {
-                stroke-dasharray: 50;
-                stroke-dashoffset: 0;
-              }
-            }
-
-            @keyframes fadeUp {
-              0% {
-                opacity: 0;
-                transform: translateY(20px);
-              }
-
-              100% {
-                opacity: 1;
-                transform: translateY(0);
-              }
-            }
-
-            @keyframes slideIn {
-              from {
-                opacity: 0;
-                transform: translateX(30px);
-              }
-
-              to {
-                opacity: 1;
-                transform: translateX(0);
-              }
-            }
-          `}
-        </style>
-
-      </section>
-    </MainLayout>
-  );
+</MainLayout>
+);
 }
