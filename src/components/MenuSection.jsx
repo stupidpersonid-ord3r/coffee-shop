@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import MenuCard from "./MenuCard";
 import SectionTitle from "./SectionTitle";
 import { getBestSellers } from "../services/getBestSellers";
 
@@ -29,12 +28,6 @@ export default function MenuSection() {
   return (
     <section className="py-24 bg-stone-50">
       <div className="max-w-7xl mx-auto px-5">
-
-        <SectionTitle
-          subtitle="🔥 Best Seller"
-          title="Menu Terlaris Kami"
-          description="Produk yang paling banyak dipesan oleh pelanggan berdasarkan transaksi yang telah selesai."
-        />
 
         {/* Loading */}
         {loading ? (
@@ -66,25 +59,6 @@ export default function MenuSection() {
         ) : (
 
           <>
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 mt-12">
-
-              {menu.map((item) => (
-
-                <div
-                  key={item.id}
-                  className="relative"
-                >
-                  {/* Badge */}
-                  <span className="absolute top-4 left-4 z-10 bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full shadow">
-                    🔥 Best Seller
-                  </span>
-
-                  <MenuCard item={item} />
-                </div>
-
-              ))}
-
-            </div>
 
             {/* Button */}
             <div className="text-center mt-14">
