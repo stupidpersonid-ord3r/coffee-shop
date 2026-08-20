@@ -40,7 +40,7 @@ export default function Navbar() {
       path: "/menu",
     },
     {
-      name: "About",
+      name: "Our Story",
       path: "/about",
     },
     {
@@ -48,7 +48,7 @@ export default function Navbar() {
       path: "/contact",
     },
     {
-      name: "Lacak Pesanan",
+      name: "Find Order",
       path: "/find-order",
     },
   ];
@@ -71,7 +71,7 @@ export default function Navbar() {
           <FaCoffee className="text-amber-700 text-3xl" />
 
           <span className="font-bold text-2xl text-stone-900">
-            Coffee Shop
+            R&A.co
           </span>
         </Link>
 
