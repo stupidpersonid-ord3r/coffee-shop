@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import { supabase } from "../lib/supabase";
-import qris from "../assets/qris.jpg";
+import qrcode from "../assets/qrcode.jpg";
 
 export default function OrderSuccess() {
   const { orderId } = useParams();
@@ -17,6 +17,7 @@ export default function OrderSuccess() {
     sender_account: "",
   });
 
+  const [showQrModal, setShowQrModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
 
@@ -832,46 +833,63 @@ const handleCancelOrder = async () => {
 
 {payment?.payment_method === "qris" &&
   payment?.payment_status === "pending" && (
-    <div className="rounded-xl border p-5 bg-purple-50">
+    <div className="rounded-2xl border border-purple-200 bg-purple-50 p-6">
 
-      <p className="font-bold text-lg">
-        📱 Pembayaran QRIS
-      </p>
+  <h3 className="text-xl font-bold flex items-center gap-2">
+    📱 Pembayaran QRIS
+  </h3>
 
+  <p className="mt-3 text-center text-gray-600">
+    Scan QR Code berikut menggunakan aplikasi
+    <span className="font-semibold">
+      {" "}DANA, OVO, GoPay, ShopeePay, atau Mobile Banking
+    </span>
+    untuk melakukan pembayaran.
+  </p>
+
+  <div className="flex justify-center mt-6">
+    <div className="bg-white rounded-2xl p-5 shadow-xl border border-gray-200">
       <img
-        src={qris}
-        alt="QRIS"
-        className="w-60 mx-auto mt-5 rounded-xl shadow-md"
-      />
+  src={qrcode}
+  alt="QRIS"
+  onClick={() => setShowQrModal(true)}
+  className="w-full max-w-md rounded-xl cursor-pointer hover:scale-105 transition duration-300"
+/>
 
-      <div className="mt-6 space-y-3">
-        <input
-          type="text"
-          name="sender_name"
-          placeholder="Nama Pengirim"
-          value={paymentForm.sender_name}
-          onChange={handlePaymentInput}
-          className="w-full border rounded-xl p-3"
-        />
-
-        <input
-          type="text"
-          name="sender_account"
-          placeholder="Nomor HP / DANA"
-          value={paymentForm.sender_account}
-          onChange={handlePaymentInput}
-          className="w-full border rounded-xl p-3"
-        />
-      </div>
-
-      <button
-        onClick={handleConfirmPayment}
-        className="mt-5 bg-purple-600 hover:bg-purple-700 text-white px-5 py-3 rounded-xl font-semibold transition"
-      >
-        Konfirmasi Pembayaran
-      </button>
-
+<p className="text-center text-sm text-gray-500 mt-3">
+  Klik gambar untuk memperbesar
+</p>
     </div>
+  </div>
+
+  <div className="mt-8 space-y-3">
+    <input
+      type="text"
+      name="sender_name"
+      placeholder="Nama Pengirim"
+      value={paymentForm.sender_name}
+      onChange={handlePaymentInput}
+      className="w-full border rounded-xl p-3"
+    />
+
+    <input
+      type="text"
+      name="sender_account"
+      placeholder="Nomor HP / DANA"
+      value={paymentForm.sender_account}
+      onChange={handlePaymentInput}
+      className="w-full border rounded-xl p-3"
+    />
+  </div>
+
+  <button
+    onClick={handleConfirmPayment}
+    className="mt-6 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition"
+  >
+    Konfirmasi Pembayaran
+  </button>
+
+</div>
 )}
 
     </div>
@@ -1047,6 +1065,27 @@ const handleCancelOrder = async () => {
       </div>
 
     </div>
+  </div>
+)}
+
+    {showQrModal && (
+  <div
+    className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+    onClick={() => setShowQrModal(false)}
+  >
+    <button
+      className="absolute top-5 right-5 text-white text-5xl font-bold"
+      onClick={() => setShowQrModal(false)}
+    >
+      ✕
+    </button>
+
+    <img
+      src={qrcode}
+      alt="QRIS Full"
+      className="max-w-full max-h-[90vh] rounded-2xl shadow-2xl"
+      onClick={(e) => e.stopPropagation()}
+    />
   </div>
 )}
 
