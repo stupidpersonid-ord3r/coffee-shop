@@ -1,6 +1,7 @@
 import MainLayout from "../layouts/MainLayout";
 import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
+import { FaTrashAlt } from "react-icons/fa";
 
 export default function Cart() {
   const {
@@ -48,6 +49,14 @@ export default function Cart() {
             <p className="text-gray-500 mt-2">
               Yuk pilih menu favorit kamu terlebih dahulu.
             </p>
+
+            <button
+              type="button"
+              onClick={() => navigate("/menu")}
+              className="mt-6 px-6 py-3 rounded-xl bg-amber-700 text-white font-semibold hover:bg-amber-800 transition"
+            >
+              Lihat Menu
+            </button>
           </div>
         ) : (
           <>
@@ -71,6 +80,7 @@ export default function Cart() {
 
                       {/* Quantity Controls */}
                       <div className="flex items-center gap-3 mt-4">
+                        {/* Decrease */}
                         <button
                           type="button"
                           onClick={() => decreaseQuantity(item.id)}
@@ -79,10 +89,12 @@ export default function Cart() {
                           −
                         </button>
 
+                        {/* Quantity */}
                         <span className="w-8 text-center font-semibold text-gray-900">
                           {item.quantity}
                         </span>
 
+                        {/* Increase */}
                         <button
                           type="button"
                           onClick={() => increaseQuantity(item.id)}
@@ -91,11 +103,13 @@ export default function Cart() {
                           +
                         </button>
 
+                        {/* Delete Item */}
                         <button
                           type="button"
                           onClick={() => removeFromCart(item.id)}
-                          className="ml-2 px-3 py-2 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 hover:text-red-600 transition"
+                          className="ml-2 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-200 bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 hover:border-red-300 hover:text-red-700 active:scale-95 transition"
                         >
+                          <FaTrashAlt className="text-xs" />
                           Hapus
                         </button>
                       </div>
@@ -126,8 +140,9 @@ export default function Cart() {
                 <button
                   type="button"
                   onClick={clearCart}
-                  className="w-fit px-4 py-2.5 rounded-xl border border-red-200 text-red-500 font-medium hover:bg-red-50 hover:border-red-300 transition"
+                  className="w-fit inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-red-300 bg-red-50 text-red-600 font-semibold hover:bg-red-100 hover:border-red-400 hover:text-red-700 active:scale-95 transition"
                 >
+                  <FaTrashAlt className="text-sm" />
                   Kosongkan Keranjang
                 </button>
 
@@ -160,3 +175,4 @@ export default function Cart() {
     </MainLayout>
   );
 }
+
