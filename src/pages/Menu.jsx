@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import MainLayout from "../layouts/MainLayout";
-import SearchBar from "../components/SearchBar";
 import CategoryFilter from "../components/CategoryFilter";
 import MenuCard from "../components/MenuCard";
 import { supabase } from "../lib/supabase";
@@ -10,7 +9,6 @@ export default function Menu() {
   const [menu, setMenu] = useState([]);
   const [bestSellers, setBestSellers] = useState([]);
 
-  const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
 
   const [loading, setLoading] = useState(true);
@@ -64,32 +62,18 @@ export default function Menu() {
   // =========================
   const filteredMenu = useMemo(() => {
     return menu.filter((item) => {
-      const matchSearch = item.name
-        .toLowerCase()
-        .includes(search.toLowerCase());
-
-      const matchCategory =
-        category === "All" || item.category === category;
-
-      return matchSearch && matchCategory;
+      return category === "All" || item.category === category;
     });
-  }, [menu, search, category]);
+  }, [menu, category]);
 
   // =========================
   // FILTER BEST SELLER
   // =========================
   const filteredBestSellers = useMemo(() => {
     return bestSellers.filter((item) => {
-      const matchSearch = item.name
-        .toLowerCase()
-        .includes(search.toLowerCase());
-
-      const matchCategory =
-        category === "All" || item.category === category;
-
-      return matchSearch && matchCategory;
+      return category === "All" || item.category === category;
     });
-  }, [bestSellers, search, category]);
+  }, [bestSellers, category]);
 
   return (
     <MainLayout>
@@ -113,14 +97,9 @@ export default function Menu() {
         </div>
 
         {/* =========================
-            SEARCH + CATEGORY
+            CATEGORY FILTER
         ========================= */}
-        <div className="flex flex-col md:flex-row justify-between gap-5 mb-12">
-          <SearchBar
-            value={search}
-            onChange={setSearch}
-          />
-
+        <div className="mb-12">
           <CategoryFilter
             active={category}
             onSelect={setCategory}
@@ -138,10 +117,6 @@ export default function Menu() {
                 <p className="text-sm font-medium text-amber-700 uppercase tracking-widest">
                   Customer Favorites
                 </p>
-
-                <h2 className="text-3xl font-bold text-gray-900 mt-1">
-                  Best Sellers 🔥
-                </h2>
 
                 <p className="text-gray-500 mt-2">
                   Menu yang paling banyak dipesan customer.

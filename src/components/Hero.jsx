@@ -111,18 +111,7 @@ export default function Hero() {
           </div>
 
           {/* ================= STATS ================= */}
-          <div className="grid grid-cols-3 gap-8 mt-16">
-
-            {/* Menu */}
-            <div>
-              <h2 className="text-4xl font-bold text-amber-700">
-                30+
-              </h2>
-
-              <p className="text-stone-500 mt-2">
-                Menu Pilihan
-              </p>
-            </div>
+          <div className="grid grid-cols-2 gap-8 mt-16">
 
             {/* Orders */}
             <div>
