@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import { supabase } from "../lib/supabase";
+import qris from "../assets/qris.jpg";
 
 export default function OrderSuccess() {
   const { orderId } = useParams();
@@ -828,6 +829,7 @@ const handleCancelOrder = async () => {
             {/* =========================
     QRIS
 ========================= */}
+
 {payment?.payment_method === "qris" &&
   payment?.payment_status === "pending" && (
     <div className="rounded-xl border p-5 bg-purple-50">
@@ -837,9 +839,9 @@ const handleCancelOrder = async () => {
       </p>
 
       <img
-        src="/images/qris.png"
+        src={qris}
         alt="QRIS"
-        className="w-60 mx-auto mt-5"
+        className="w-60 mx-auto mt-5 rounded-xl shadow-md"
       />
 
       <div className="mt-6 space-y-3">
