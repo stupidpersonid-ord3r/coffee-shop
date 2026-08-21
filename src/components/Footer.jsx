@@ -8,7 +8,7 @@ export default function Footer() {
         <div>
           <div className="flex items-center gap-2 mb-4">
             <FaCoffee className="text-amber-500 text-3xl" />
-            <h2 className="text-2xl font-bold">Coffee Shop</h2>
+            <h2 className="text-2xl font-bold">R&A Coffee</h2>
           </div>
 
           <p className="text-stone-300">
@@ -37,7 +37,7 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-stone-700 py-5 text-center text-stone-400">
-        © 2026 Coffee Shop. All Rights Reserved.
+        © 2026 R&A Coffee. All Rights Reserved.
       </div>
     </footer>
   );
