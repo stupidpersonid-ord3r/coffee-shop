@@ -755,27 +755,44 @@ const handleCancelOrder = async () => {
 ========================= */}
 {payment?.payment_method === "cash" &&
   payment?.payment_status === "pending" && (
-    <div className="rounded-2xl border border-green-200 bg-green-50 p-6">
-
-      <h3 className="text-xl font-bold flex items-center gap-3 text-gray-900">
-        <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-green-100 text-green-600">
-          <FaMoneyBillWave />
-        </span>
-        Pembayaran Cash
-      </h3>
-
-      <p className="mt-4 text-gray-600 leading-relaxed">
-        Silakan lakukan pembayaran langsung kepada kasir.
-      </p>
-
-      <button
-        onClick={handleConfirmPayment}
-        className="mt-6 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-semibold transition"
-      >
-        Konfirmasi Pembayaran
-      </button>
-
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
+  <div className="flex items-center gap-3">
+    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+      <FaMoneyBillWave className="text-amber-600 text-xl" />
     </div>
+
+    <div>
+      <h3 className="text-lg font-semibold text-gray-900">
+        Pembayaran Tunai
+      </h3>
+      <p className="text-sm text-gray-500">
+        Ikuti langkah berikut untuk menyelesaikan pembayaran.
+      </p>
+    </div>
+  </div>
+
+  <div className="my-5 border-t border-amber-200" />
+
+  <div className="space-y-3 text-sm text-gray-700">
+    <div className="flex items-start gap-3">
+      <span className="mt-1 text-amber-600">①</span>
+      <p>Silakan menuju kasir untuk melakukan pembayaran.</p>
+    </div>
+
+    <div className="flex items-start gap-3">
+      <span className="mt-1 text-amber-600">②</span>
+      <p>Tunjukkan nomor pesanan kepada petugas kasir.</p>
+    </div>
+
+    <div className="flex items-start gap-3">
+      <span className="mt-1 text-green-600">✓</span>
+      <p>
+        Status pesanan akan diperbarui secara otomatis setelah pembayaran
+        diverifikasi.
+      </p>
+    </div>
+  </div>
+</div>
   )}
 
 
