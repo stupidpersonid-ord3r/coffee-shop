@@ -3,6 +3,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import { supabase } from "../lib/supabase";
 import qrcode from "../assets/qrcode.jpg";
+import {
+  FaMoneyBillWave,
+  FaUniversity,
+  FaQrcode,
+  FaCreditCard,
+} from "react-icons/fa";
 
 export default function OrderSuccess() {
   const { orderId } = useParams();
@@ -745,152 +751,171 @@ const handleCancelOrder = async () => {
             )}
 
             {/* =========================
-                CASH
-            ========================= */}
-            {payment?.payment_method === "cash" &&
-              payment?.payment_status === "pending" && (
-                <div className="rounded-xl border p-5 bg-green-50">
+    CASH
+========================= */}
+{payment?.payment_method === "cash" &&
+  payment?.payment_status === "pending" && (
+    <div className="rounded-2xl border border-green-200 bg-green-50 p-6">
 
-                  <p className="font-bold text-lg">
-                    💵 Pembayaran Cash
-                  </p>
+      <h3 className="text-xl font-bold flex items-center gap-3 text-gray-900">
+        <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-green-100 text-green-600">
+          <FaMoneyBillWave />
+        </span>
+        Pembayaran Cash
+      </h3>
 
-                  <p className="mt-3 text-gray-600">
-                    Silakan lakukan pembayaran langsung kepada
-                    kasir.
-                  </p>
+      <p className="mt-4 text-gray-600 leading-relaxed">
+        Silakan lakukan pembayaran langsung kepada kasir.
+      </p>
 
-                  <button
-                    onClick={handleConfirmPayment}
-                    className="mt-5 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-semibold transition"
-                  >
-                    Konfirmasi Pembayaran
-                  </button>
+      <button
+        onClick={handleConfirmPayment}
+        className="mt-6 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-semibold transition"
+      >
+        Konfirmasi Pembayaran
+      </button>
 
-                </div>
-              )}
+    </div>
+  )}
 
-            {/* =========================
-                TRANSFER
-            ========================= */}
-            {payment?.payment_method === "transfer" &&
-              payment?.payment_status === "pending" && (
-                <div className="rounded-xl border p-5 bg-blue-50">
 
-                  <p className="font-bold text-lg">
-                    🏦 Transfer Bank
-                  </p>
+{/* =========================
+    TRANSFER
+========================= */}
+{payment?.payment_method === "transfer" &&
+  payment?.payment_status === "pending" && (
+    <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6">
 
-                  <div className="mt-4 space-y-1">
-                    <p>
-                      <b>BCA</b>
-                    </p>
+      <h3 className="text-xl font-bold flex items-center gap-3 text-gray-900">
+        <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-100 text-blue-600">
+          <FaUniversity />
+        </span>
+        Transfer Bank
+      </h3>
 
-                    <p>
-                      1234567890
-                    </p>
+      <div className="mt-5 bg-white rounded-xl border border-blue-100 p-4">
+        <p className="text-sm text-gray-500">
+          Bank
+        </p>
 
-                    <p>
-                      a.n Coffee Shop
-                    </p>
-                  </div>
+        <p className="font-bold text-lg mt-1">
+          BCA
+        </p>
 
-                  <div className="mt-6 space-y-3">
+        <p className="text-xl font-semibold tracking-wide mt-2">
+          1234567890
+        </p>
 
-                    <input
-                      type="text"
-                      name="sender_name"
-                      placeholder="Nama Pengirim"
-                      value={paymentForm.sender_name}
-                      onChange={handlePaymentInput}
-                      className="w-full border rounded-xl p-3"
-                    />
+        <p className="text-gray-600 mt-1">
+          a.n Coffee Shop
+        </p>
+      </div>
 
-                    <input
-                      type="text"
-                      name="sender_account"
-                      placeholder="Nomor Rekening"
-                      value={paymentForm.sender_account}
-                      onChange={handlePaymentInput}
-                      className="w-full border rounded-xl p-3"
-                    />
+      <div className="mt-6 space-y-3">
 
-                  </div>
+        <input
+          type="text"
+          name="sender_name"
+          placeholder="Nama Pengirim"
+          value={paymentForm.sender_name}
+          onChange={handlePaymentInput}
+          className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
 
-                  <button
-                    onClick={handleConfirmPayment}
-                    className="mt-5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-semibold transition"
-                  >
-                    Konfirmasi Pembayaran
-                  </button>
+        <input
+          type="text"
+          name="sender_account"
+          placeholder="Nomor Rekening"
+          value={paymentForm.sender_account}
+          onChange={handlePaymentInput}
+          className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
 
-                </div>
-              )}
+      </div>
 
-            {/* =========================
+      <button
+        onClick={handleConfirmPayment}
+        className="mt-5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-semibold transition"
+      >
+        Konfirmasi Pembayaran
+      </button>
+
+    </div>
+  )}
+
+
+{/* =========================
     QRIS
 ========================= */}
-
 {payment?.payment_method === "qris" &&
   payment?.payment_status === "pending" && (
     <div className="rounded-2xl border border-purple-200 bg-purple-50 p-6">
 
-  <h3 className="text-xl font-bold flex items-center gap-2">
-    📱 Pembayaran QRIS
-  </h3>
+      <h3 className="text-xl font-bold flex items-center gap-3 text-gray-900">
+        <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-purple-100 text-purple-600">
+          <FaQrcode />
+        </span>
+        Pembayaran QRIS
+      </h3>
 
-  <p className="mt-3 text-center text-gray-600">
-    Scan QR Code berikut menggunakan aplikasi
-    <span className="font-semibold">
-      {" "}DANA, OVO, GoPay, ShopeePay, atau Mobile Banking
-    </span>
-    untuk melakukan pembayaran.
-  </p>
+      <p className="mt-4 text-center text-gray-600 leading-relaxed">
+        Scan QR Code berikut menggunakan aplikasi
+        <span className="font-semibold text-gray-800">
+          {" "}DANA, OVO, GoPay, ShopeePay, atau Mobile Banking
+        </span>
+        {" "}untuk melakukan pembayaran.
+      </p>
 
-  <div className="flex justify-center mt-6">
-    <div className="bg-white rounded-2xl p-5 shadow-xl border border-gray-200">
-      <img
-  src={qrcode}
-  alt="QRIS"
-  onClick={() => setShowQrModal(true)}
-  className="w-full max-w-md rounded-xl cursor-pointer hover:scale-105 transition duration-300"
-/>
+      <div className="flex justify-center mt-6">
 
-<p className="text-center text-sm text-gray-500 mt-3">
-  Klik gambar untuk memperbesar
-</p>
+        <div className="bg-white rounded-2xl p-5 shadow-xl border border-gray-200">
+
+          <img
+            src={qrcode}
+            alt="QRIS"
+            onClick={() => setShowQrModal(true)}
+            className="w-full max-w-md rounded-xl cursor-pointer hover:scale-105 transition duration-300"
+          />
+
+          <p className="text-center text-sm text-gray-500 mt-3">
+            Klik gambar untuk memperbesar
+          </p>
+
+        </div>
+
+      </div>
+
+      <div className="mt-8 space-y-3">
+
+        <input
+          type="text"
+          name="sender_name"
+          placeholder="Nama Pengirim"
+          value={paymentForm.sender_name}
+          onChange={handlePaymentInput}
+          className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        />
+
+        <input
+          type="text"
+          name="sender_account"
+          placeholder="Nomor HP / DANA"
+          value={paymentForm.sender_account}
+          onChange={handlePaymentInput}
+          className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        />
+
+      </div>
+
+      <button
+        onClick={handleConfirmPayment}
+        className="mt-6 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition"
+      >
+        Konfirmasi Pembayaran
+      </button>
+
     </div>
-  </div>
-
-  <div className="mt-8 space-y-3">
-    <input
-      type="text"
-      name="sender_name"
-      placeholder="Nama Pengirim"
-      value={paymentForm.sender_name}
-      onChange={handlePaymentInput}
-      className="w-full border rounded-xl p-3"
-    />
-
-    <input
-      type="text"
-      name="sender_account"
-      placeholder="Nomor HP / DANA"
-      value={paymentForm.sender_account}
-      onChange={handlePaymentInput}
-      className="w-full border rounded-xl p-3"
-    />
-  </div>
-
-  <button
-    onClick={handleConfirmPayment}
-    className="mt-6 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition"
-  >
-    Konfirmasi Pembayaran
-  </button>
-
-</div>
-)}
+  )}
 
     </div>
         {/* =========================

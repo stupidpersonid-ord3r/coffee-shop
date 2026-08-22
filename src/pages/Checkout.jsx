@@ -3,6 +3,11 @@ import { useNavigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import { useCart } from "../context/CartContext";
 import { supabase } from "../lib/supabase";
+import {
+  FaMoneyBillWave,
+  FaUniversity,
+  FaQrcode,
+} from "react-icons/fa";
 
 export default function Checkout() {
   const { cart, clearCart } = useCart();
@@ -292,80 +297,79 @@ export default function Checkout() {
                     </div>
 
                     {/* PAYMENT */}
-<div>
-  <label className="block text-sm font-medium text-gray-700 mb-3">
-    Metode Pembayaran
+<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+
+  {/* CASH */}
+  <label
+    className={`cursor-pointer rounded-xl border p-5 transition ${
+      form.paymentMethod === "cash"
+        ? "border-orange-500 bg-orange-50"
+        : "border-gray-300 hover:border-orange-300"
+    }`}
+  >
+    <input
+      type="radio"
+      name="paymentMethod"
+      value="cash"
+      checked={form.paymentMethod === "cash"}
+      onChange={handleChange}
+      className="mr-3 accent-orange-500"
+    />
+
+    <span className="inline-flex items-center gap-2 font-semibold">
+      <FaMoneyBillWave className="text-green-600" />
+      Cash
+    </span>
   </label>
 
-  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 
-    {/* CASH */}
-    <label
-      className={`flex items-center gap-3 border rounded-xl p-4 cursor-pointer transition ${
-        form.paymentMethod === "cash"
-          ? "border-amber-600 bg-amber-50"
-          : "border-gray-300 hover:border-amber-600"
-      }`}
-    >
-      <input
-        type="radio"
-        name="paymentMethod"
-        value="cash"
-        checked={form.paymentMethod === "cash"}
-        onChange={handleChange}
-        className="accent-amber-700"
-      />
+  {/* TRANSFER */}
+  <label
+    className={`cursor-pointer rounded-xl border p-5 transition ${
+      form.paymentMethod === "transfer"
+        ? "border-orange-500 bg-orange-50"
+        : "border-gray-300 hover:border-orange-300"
+    }`}
+  >
+    <input
+      type="radio"
+      name="paymentMethod"
+      value="transfer"
+      checked={form.paymentMethod === "transfer"}
+      onChange={handleChange}
+      className="mr-3 accent-orange-500"
+    />
 
-      <span className="font-medium">
-        💵 Cash
-      </span>
-    </label>
+    <span className="inline-flex items-center gap-2 font-semibold">
+      <FaUniversity className="text-gray-600" />
+      Transfer
+    </span>
+  </label>
 
-    {/* TRANSFER */}
-    <label
-      className={`flex items-center gap-3 border rounded-xl p-4 cursor-pointer transition ${
-        form.paymentMethod === "transfer"
-          ? "border-amber-600 bg-amber-50"
-          : "border-gray-300 hover:border-amber-600"
-      }`}
-    >
-      <input
-        type="radio"
-        name="paymentMethod"
-        value="transfer"
-        checked={form.paymentMethod === "transfer"}
-        onChange={handleChange}
-        className="accent-amber-700"
-      />
 
-      <span className="font-medium">
-        🏦 Transfer
-      </span>
-    </label>
+  {/* QRIS */}
+  <label
+    className={`cursor-pointer rounded-xl border p-5 transition ${
+      form.paymentMethod === "qris"
+        ? "border-orange-500 bg-orange-50"
+        : "border-gray-300 hover:border-orange-300"
+    }`}
+  >
+    <input
+      type="radio"
+      name="paymentMethod"
+      value="qris"
+      checked={form.paymentMethod === "qris"}
+      onChange={handleChange}
+      className="mr-3 accent-orange-500"
+    />
 
-    {/* QRIS */}
-    <label
-      className={`flex items-center gap-3 border rounded-xl p-4 cursor-pointer transition ${
-        form.paymentMethod === "qris"
-          ? "border-amber-600 bg-amber-50"
-          : "border-gray-300 hover:border-amber-600"
-      }`}
-    >
-      <input
-        type="radio"
-        name="paymentMethod"
-        value="qris"
-        checked={form.paymentMethod === "qris"}
-        onChange={handleChange}
-        className="accent-amber-700"
-      />
+    <span className="inline-flex items-center gap-2 font-semibold">
+      <FaQrcode className="text-purple-600" />
+      QRIS
+    </span>
+  </label>
 
-      <span className="font-medium">
-        📱 QRIS
-      </span>
-    </label>
-
-  </div>
 </div>
 
                     {/* ERROR */}
